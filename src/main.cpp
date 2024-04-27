@@ -7,13 +7,13 @@
 #include <SDL.h>
 #include <SDL_ttf.h>
 
-#include "GlobalSource.h"
-#include "Board.h"
-#include "Piece.h"
+#include "src_headers/GlobalSource.h"
+#include "src_headers/Board.h"
+#include "src_headers/Piece.h"
 
 int EnsureWindowSize() {
     // Fetch rect of current window properties
-    SDL_Rect rect_current;
+    SDL_Rect rect_current = {0, 0};
     SDL_GetWindowSize(window.window, &rect_current.w, &rect_current.h);
     //SDL_GetWindowPosition(Window.window, &rect_current.x, &rect_current.y);
 
@@ -46,7 +46,8 @@ int main(int argc, char** argv) {
 
     // Init TTF
     if (TTF_Init() != 0) {
-        LogError("TTF failed to init", SDL_GetError(), false);
+        LogError("TTF failed to init", SDL_GetError(), true);
+        return 0;
     }
 
     // produce window
@@ -77,49 +78,103 @@ int main(int argc, char** argv) {
 //    }
 //
 //    // Apply borders to position and dimensions of window
-    window.currentRect.x = b_left;
-    window.currentRect.y = b_top;
 //    window.currentRect.w -= b_right + b_left;
 //    window.currentRect.h -= b_top;
 
-    SDL_SetWindowPosition(window.window, window.currentRect.x, window.currentRect.y);
+    SDL_SetWindowPosition(window.window, b_left, b_top);
     SDL_SetWindowSize(window.window, window.currentRect.w, window.currentRect.h);
 
-    SDL_ClearError();
+    SDL_ClearError(); // clean up any other errors which may appear before deliberate error checking
+
+    /*
+     *  CONSTRUCT GAME ELEMENTS
+     */
+
+    // Construct Window Background
+    window.background = IMG_LoadTexture(window.renderer, "../Resources/GameBoard/Green_Background.png");
 
     // Construct Board
     Board board;
+    board.CreateBoardTexture();
 
-    // Construct Pieces
-    Piece pawn("../Resources/Piece/Pawn_White_Temp.png", 250, 250);
+    // Construct WHITE Pieces
+    std::vector<Piece*> white_pieces;
+
+    Piece pawn("Pawn", "White_Temp", {'A', 2});
+    pawn.CreateTextures();
+    pawn.GetRectOfBoardPosition(board);
+
+    white_pieces.push_back(&pawn);
+
+    // Construct BLACK Pieces
+    std::vector<Piece*> black_pieces;
 
     bool running = true;
     while (running) {
         // Clear screen
         SDL_RenderClear(window.renderer);
 
-        // Draw to screen
+        /*
+         *  DRAW TO SCREEN
+         */
+
+        // Board and Background
+        SDL_RenderCopy(window.renderer, window.background, nullptr, &window.currentRect);
         board.DisplayGameBoard();
 
-        // Event management
+        // White Pieces
+        for (Piece* white_piece : white_pieces) {
+            white_piece->DisplayPiece();
+            white_piece->DisplayMoves(board);
+        }
+
+        /*
+         *  EVENT MANAGEMENT
+         */
+
+        // User input events
         SDL_Event event;
         while (SDL_PollEvent(&event) != 0) {
             if (event.type == SDL_QUIT) {
                 running = false;
             }
+            if (event.type == SDL_MOUSEBUTTONDOWN) {
+                mouseInput.active = true;
+            }
+            if (event.type == SDL_MOUSEBUTTONUP) {
+                mouseInput.active = false;
+            }
         }
 
-        // Update screen
+        // piece click management
+        for (Piece* piece : white_pieces) {
+            // Check if piece is clicked on
+            if (piece->IsClicked()){
+                piece->FetchMoves(black_pieces, board);
+            }
+
+
+        }
+
+        /*
+         *  UPDATE SCREEN
+         */
+
         SDL_RenderPresent(window.renderer);
 
-
+        /*
+         *  RECREATE TEXTURES IF REQUIRED
+         */
 
         if (EnsureWindowSize() != 0){
             board.CreateBoardTexture();
+            pawn.GetRectOfBoardPosition(board);
         }
+
     }
 
-
+    SDL_Quit();
+    TTF_Quit();
 
     return 1;
 }
