@@ -13,13 +13,15 @@
 
 class Board{
     private:
-        //
+        // Display sizes
         static const int rows = 8;
         static const int columns = 8;
         int row_labels[rows] {};
         char col_labels[columns] {};
         int tileWidth {};
         int tileHeight {};
+        float tile_borderWidth = 0.1;
+        float tile_borderHeight = 0.1;
 
         // SDL display
         SDL_Texture* tileTextures[2] {};
@@ -47,7 +49,9 @@ class Board{
             w = T(tileWidth);
             h = T(tileHeight);
         }
-        void GetBoardTLPosition(int& x, int& y) const;
+        void GetBoardBLPosition(int& x, int& y) const;
+        void GetTileRectFromPosition(SDL_Rect& rect, Position<char, int> position) const;
+        void GetBorderedRectFromPosition(SDL_Rect &rect, Position<char, int> position) const;
         // Setters
 };
 

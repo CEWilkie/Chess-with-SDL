@@ -13,53 +13,69 @@
 #include "GlobalSource.h"
 #include "Board.h"
 
+class Piece;
+
 struct Piece_Info {
     std::string name = "Pawn";
     std::string color = "White";
-    char col = 'W';
+    char colID = 'W';
+    Position<char, int> gamepos {'A', 7};
 };
 
 struct AvailableMove{
     Position<char, int> position;
     bool capture;
+    Piece* target = nullptr;
 };
 
 class Piece {
     protected:
         // Game mechanics / position
-        Position<char, int> gamepos {};
-        std::vector<AvailableMove> valid_moves {};
+        std::vector<AvailableMove> validMoves {};
+        bool captured = false;
 
         // Piece identification
-        Piece_Info info {};
+        Piece_Info* info {};
 
         // SDL display
         std::string imgName {};
         SDL_Texture* pieceTexture {};
         SDL_Texture* moveHighlights[3] {};
         SDL_Rect pieceRect {};
-        SDL_Rect boardpos_rect {};
+        SDL_Rect boardposRect {};
         float b_width = 0.1;
 
         // pawn movements
         bool hasMoved = false;
-        bool canPassant = true;
-        bool canPromote = true;
+        bool canPassant = false;
+        bool canPromote = false;
+
         int dir = 1;
 
-        // universal movements
+        // user input detection
         bool selected = false;
 
     public:
-        Piece(const std::string& _name, const std::string& _color, Position<char, int> _gamepos);
+        Piece(const std::string& _name, const std::string& _color, Position<char, int> _target);
         int CreateTextures();
         void GetRectOfBoardPosition(const Board& board);
         void DisplayPiece();
-        void virtual FetchMoves(const std::vector<Piece*> &opp_pieces, const Board& board);
+
+        // Fetching Moves
+        static int PieceOnPosition(const std::vector<Piece*> &_teamPieces, const std::vector<Piece*> &oppPieces, Position<char, int> _targetPos);
+        void virtual FetchMoves(const std::vector<Piece*> &_teamPieces, const std::vector<Piece*> &_oppPieces, const Board& _board);
+        void ClearMoves();
+
         void Captured();
         void DisplayMoves(const Board& board);
-        bool IsClicked();
+        bool MouseHover();
+        bool CheckClicked();
+        bool UpdateSelected();
+        void UnselectPiece();
 
+        Piece_Info* GetPieceInfoPtr() { return info; };
+        std::vector<AvailableMove>* GetAvailableMovesPtr() { return &validMoves; };
+        void MoveTo(Position<char, int> _movepos, const Board& _board);
 };
 
 

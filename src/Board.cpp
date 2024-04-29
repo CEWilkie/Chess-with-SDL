@@ -51,7 +51,7 @@ int Board::CreateBoardTexture() {
         return -1;
     }
 
-    // add in Board Base pieceTexture:
+    // Add in Board Base pieceTexture:
     SDL_Rect tileRect {0, 0, boardRect.w, boardRect.h};
     SDL_RenderCopy(window.renderer, boardBase, nullptr, &tileRect);
 
@@ -100,7 +100,7 @@ int Board::CreateBoardTexture() {
         w = int((float)w / ratio);
 
         // Create Rect
-        row_label_rects[r] = {boardRect.w / 20 - w / 2, boardRect.h/10 + (tileHeight * r), w, h};
+        row_label_rects[r] = {boardRect.w / 20 - w / 2, boardRect.h * 9/10  - tileHeight- (tileHeight * r), w, h};
     }
 
     // Create labels for columns
@@ -139,7 +139,7 @@ void Board::DisplayGameBoard() {
         SDL_RenderCopy(window.renderer, row_label_textures[r], nullptr, &row_label_rects[r]);
     }
 
-    // Display col labels
+    // Display colID labels
     for (int c = 0; c < columns; c++) {
         SDL_RenderCopy(window.renderer, col_label_textures[c], nullptr, &col_label_rects[c]);
     }
@@ -147,7 +147,37 @@ void Board::DisplayGameBoard() {
 
 
 
-void Board::GetBoardTLPosition(int& x, int& y) const {
-    x = tileWidth;
-    y = tileHeight;
+void Board::GetBoardBLPosition(int& x, int& y) const {
+    x = boardRect.w/10;
+    y = boardRect.h * 9/10 - tileHeight;
+}
+
+void Board::GetTileRectFromPosition(SDL_Rect &rect, Position<char, int> position) const {
+    // set rect to originate from tl of the board's bottom left tile
+    GetBoardBLPosition(rect.x, rect.y);
+
+    // now add the position values to the rect values
+    rect.x += (tileWidth * (position.x-'A'));
+    rect.y -= (tileWidth * (position.y - 1));
+    rect.w = tileWidth;
+    rect.h = tileHeight;
+}
+
+void Board::GetBorderedRectFromPosition(SDL_Rect &rect, Position<char, int> position) const {
+    // set rect to originate from tl of the board's bottom left tile
+    GetBoardBLPosition(rect.x, rect.y);
+
+    // now add the position values to the rect values
+    rect.x += (tileWidth * (position.x-'A'));
+    rect.y -= (tileWidth * (position.y - 1));
+    rect.w = tileWidth;
+    rect.h = tileHeight;
+
+    // now apply 10% border to the rect
+    rect.w = int((float)rect.w * (1 - (tile_borderWidth * 2)));
+    rect.h = int((float)rect.h * (1 - (tile_borderHeight * 2)));
+
+    // now move the tl of rect by 10% of tileWidth/tileHeight to centre the rect
+    rect.x += int((float)tileWidth*tile_borderWidth);
+    rect.y += int((float)tileHeight*tile_borderHeight);
 }

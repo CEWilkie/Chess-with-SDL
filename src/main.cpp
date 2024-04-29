@@ -10,6 +10,7 @@
 #include "src_headers/GlobalSource.h"
 #include "src_headers/Board.h"
 #include "src_headers/Piece.h"
+#include "src_headers/SelectedPiece.h"
 
 int EnsureWindowSize() {
     // Fetch rect of current window properties
@@ -84,7 +85,8 @@ int main(int argc, char** argv) {
     SDL_SetWindowPosition(window.window, b_left, b_top);
     SDL_SetWindowSize(window.window, window.currentRect.w, window.currentRect.h);
 
-    SDL_ClearError(); // clean up any other errors which may appear before deliberate error checking
+    // clean up any other errors which may appear before deliberate error checking
+    SDL_ClearError();
 
     /*
      *  CONSTRUCT GAME ELEMENTS
@@ -97,17 +99,60 @@ int main(int argc, char** argv) {
     Board board;
     board.CreateBoardTexture();
 
-    // Construct WHITE Pieces
+    /*
+     * CONSTRUCT WHITE PIECES
+     */
+    std::vector<Piece*> all_pieces;
     std::vector<Piece*> white_pieces;
 
-    Piece pawn("Pawn", "White_Temp", {'A', 2});
-    pawn.CreateTextures();
-    pawn.GetRectOfBoardPosition(board);
+    // Create Pawns
+    for (int p = 0; p < 8; p++) {
+        // Create new pawn
+        auto* pawn = new Piece("Pawn", "White_Temp", {char('A'+p), 2});
+        pawn->CreateTextures();
+        pawn->GetRectOfBoardPosition(board);
 
-    white_pieces.push_back(&pawn);
+        // add to pieces vector
+        white_pieces.push_back(pawn);
+        all_pieces.push_back(pawn);
+    }
 
-    // Construct BLACK Pieces
-    std::vector<Piece*> black_pieces;
+    auto* test_pawn = new Piece("Pawn", "White_Temp", {'A', 3});
+    test_pawn->CreateTextures();
+    test_pawn->GetRectOfBoardPosition(board);
+    white_pieces.push_back(test_pawn);
+    all_pieces.push_back(test_pawn);
+
+    /*
+     * CONSTRUCT BLACK PIECES
+     */
+     std::vector<Piece*> black_pieces;
+
+    // Create Pawns
+    for (int p = 0; p < 8; p++) {
+        // Create new pawn
+        auto* pawn = new Piece("Pawn", "Black_Temp", {char('A'+p), 7});
+        pawn->CreateTextures();
+        pawn->GetRectOfBoardPosition(board);
+
+        // add to pieces vector
+        black_pieces.push_back(pawn);
+        all_pieces.push_back(pawn);
+    }
+
+    test_pawn = new Piece("Pawn", "Black_Temp", {'B', 3});
+    test_pawn->CreateTextures();
+    test_pawn->GetRectOfBoardPosition(board);
+    black_pieces.push_back(test_pawn);
+    all_pieces.push_back(test_pawn);
+
+    /*
+     * CONSTRUCT ADDITIONAL
+     */
+
+    auto* teamptr = &white_pieces;
+    auto* oppptr = &black_pieces;
+    SelectedPiece selectedPiece(teamptr, oppptr, &board);
 
     bool running = true;
     while (running) {
@@ -118,19 +163,21 @@ int main(int argc, char** argv) {
          *  DRAW TO SCREEN
          */
 
-        // Board and Background
+        // Display Board and Background
         SDL_RenderCopy(window.renderer, window.background, nullptr, &window.currentRect);
         board.DisplayGameBoard();
 
-        // White Pieces
-        for (Piece* white_piece : white_pieces) {
-            white_piece->DisplayPiece();
-            white_piece->DisplayMoves(board);
+        // Display Pieces
+        for (Piece* piece : all_pieces) {
+            piece->DisplayPiece();
+            piece->DisplayMoves(board);
         }
 
         /*
-         *  EVENT MANAGEMENT
+         *  FETCH USER INPUT FROM EVENTS
          */
+
+        mouseInput.prevactive = mouseInput.active;
 
         // User input events
         SDL_Event event;
@@ -146,13 +193,37 @@ int main(int argc, char** argv) {
             }
         }
 
-        // piece click management
-        for (Piece* piece : white_pieces) {
-            // Check if piece is clicked on
-            if (piece->IsClicked()){
-                piece->FetchMoves(black_pieces, board);
-            }
+        // Update mouse
+        mouseInput.UpdateState();
 
+        /*
+         * EVENT MANAGEMENT
+         */
+
+        // First check if user has clicked on an available move space / dragged piece to available move space
+        if (mouseInput.active) {
+            if (selectedPiece.MadeMove(oppptr)) {
+                printf("move made!");
+                selectedPiece.SwapPieceSetPointers();
+                std::swap(teamptr, oppptr);
+            }
+        }
+
+        // On user click
+        if (mouseInput.active && ! mouseInput.heldactive) {
+            // User did not click on available move, so check if a different piece was clicked
+            if (!std::any_of(teamptr->begin(), teamptr->end(), [&selectedPiece](Piece* piece)
+            {
+                if (piece->CheckClicked()) {
+                    // piece was clicked, so update the selected piece
+                    selectedPiece.ChangeSelectedPiece(piece);
+                    return true;
+                }
+                return false;
+            })) {
+                // no piece was selected on click
+                selectedPiece.ChangeSelectedPiece(nullptr);
+            }
 
         }
 
@@ -167,8 +238,18 @@ int main(int argc, char** argv) {
          */
 
         if (EnsureWindowSize() != 0){
+            // board
             board.CreateBoardTexture();
-            pawn.GetRectOfBoardPosition(board);
+
+            // white pieces
+            for (Piece* piece : white_pieces) {
+                piece->GetRectOfBoardPosition(board);
+            }
+
+            // black pieces
+            for (Piece* piece : black_pieces) {
+                piece->GetRectOfBoardPosition(board);
+            }
         }
 
     }
