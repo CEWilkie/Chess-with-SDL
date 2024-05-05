@@ -117,12 +117,6 @@ int main(int argc, char** argv) {
         all_pieces.push_back(pawn);
     }
 
-    auto* test_pawn = new Piece("Pawn", "White_Temp", {'A', 3});
-    test_pawn->CreateTextures();
-    test_pawn->GetRectOfBoardPosition(board);
-    white_pieces.push_back(test_pawn);
-    all_pieces.push_back(test_pawn);
-
     /*
      * CONSTRUCT BLACK PIECES
      */
@@ -140,12 +134,6 @@ int main(int argc, char** argv) {
         all_pieces.push_back(pawn);
     }
 
-    test_pawn = new Piece("Pawn", "Black_Temp", {'B', 3});
-    test_pawn->CreateTextures();
-    test_pawn->GetRectOfBoardPosition(board);
-    black_pieces.push_back(test_pawn);
-    all_pieces.push_back(test_pawn);
-
     /*
      * CONSTRUCT ADDITIONAL
      */
@@ -155,6 +143,7 @@ int main(int argc, char** argv) {
     SelectedPiece selectedPiece(teamptr, oppptr, &board);
 
     bool running = true;
+    bool eot = false;
     while (running) {
         // Clear screen
         SDL_RenderClear(window.renderer);
@@ -170,14 +159,14 @@ int main(int argc, char** argv) {
         // Display Pieces
         for (Piece* piece : all_pieces) {
             piece->DisplayPiece();
+            piece->FetchMoves(*teamptr, *oppptr, board);
+            piece->EnforceBorderOnMoves();
             piece->DisplayMoves(board);
         }
 
         /*
          *  FETCH USER INPUT FROM EVENTS
          */
-
-        mouseInput.prevactive = mouseInput.active;
 
         // User input events
         SDL_Event event;
@@ -186,52 +175,39 @@ int main(int argc, char** argv) {
                 running = false;
             }
             if (event.type == SDL_MOUSEBUTTONDOWN) {
-                mouseInput.active = true;
+                mouse.UpdateState(true);
             }
             if (event.type == SDL_MOUSEBUTTONUP) {
-                mouseInput.active = false;
+                mouse.UpdateState(false);
             }
         }
-
-        // Update mouse
-        mouseInput.UpdateState();
 
         /*
          * EVENT MANAGEMENT
          */
 
-        // First check if user has clicked on an available move space / dragged piece to available move space
-        if (mouseInput.active) {
-            if (selectedPiece.MadeMove(oppptr)) {
-                printf("move made!");
-                selectedPiece.SwapPieceSetPointers();
-                std::swap(teamptr, oppptr);
-            }
+        // check if user has made a move
+        if (selectedPiece.MadeMove(oppptr)) {
+            eot = true;
         }
 
-        // On user click
-        if (mouseInput.active && ! mouseInput.heldactive) {
-            // User did not click on available move, so check if a different piece was clicked
-            if (!std::any_of(teamptr->begin(), teamptr->end(), [&selectedPiece](Piece* piece)
-            {
-                if (piece->CheckClicked()) {
-                    // piece was clicked, so update the selected piece
-                    selectedPiece.ChangeSelectedPiece(piece);
-                    return true;
-                }
-                return false;
-            })) {
-                // no piece was selected on click
-                selectedPiece.ChangeSelectedPiece(nullptr);
-            }
-
-        }
+        // check if user clicks on a piece
+        if (!eot) selectedPiece.CheckForClicked(teamptr);
 
         /*
-         *  UPDATE SCREEN
+         *  END OF TURN MANAGEMENT
          */
 
-        SDL_RenderPresent(window.renderer);
+        if (eot) {
+            // remove moves from this turn
+            for (auto piece : all_pieces) {
+                piece->ClearMoves();
+            }
+
+            selectedPiece.SwapPieceSetPointers();
+            std::swap(teamptr, oppptr);
+            eot = false;
+        }
 
         /*
          *  RECREATE TEXTURES IF REQUIRED
@@ -252,6 +228,11 @@ int main(int argc, char** argv) {
             }
         }
 
+        /*
+         *  UPDATE SCREEN
+         */
+
+        SDL_RenderPresent(window.renderer);
     }
 
     SDL_Quit();

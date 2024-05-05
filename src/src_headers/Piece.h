@@ -23,8 +23,8 @@ struct Piece_Info {
 };
 
 struct AvailableMove{
-    Position<char, int> position;
-    bool capture;
+    Position<char, int> position {};
+    bool capture {};
     Piece* target = nullptr;
 };
 
@@ -33,6 +33,7 @@ class Piece {
         // Game mechanics / position
         std::vector<AvailableMove> validMoves {};
         bool captured = false;
+        bool updatedMoves = false;
 
         // Piece identification
         Piece_Info* info {};
@@ -54,6 +55,7 @@ class Piece {
 
         // user input detection
         bool selected = false;
+        bool followMouse = false;
 
     public:
         Piece(const std::string& _name, const std::string& _color, Position<char, int> _target);
@@ -63,12 +65,12 @@ class Piece {
 
         // Fetching Moves
         static int PieceOnPosition(const std::vector<Piece*> &_teamPieces, const std::vector<Piece*> &oppPieces, Position<char, int> _targetPos);
+        void EnforceBorderOnMoves();
         void virtual FetchMoves(const std::vector<Piece*> &_teamPieces, const std::vector<Piece*> &_oppPieces, const Board& _board);
         void ClearMoves();
 
         void Captured();
         void DisplayMoves(const Board& board);
-        bool MouseHover();
         bool CheckClicked();
         bool UpdateSelected();
         void UnselectPiece();

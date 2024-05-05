@@ -145,7 +145,10 @@ void Board::DisplayGameBoard() {
     }
 }
 
-
+void Board::GetTileRowsColumns(int &_rows, int &_cols) {
+    _rows = rows;
+    _cols = columns;
+}
 
 void Board::GetBoardBLPosition(int& x, int& y) const {
     x = boardRect.w/10;

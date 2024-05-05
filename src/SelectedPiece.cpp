@@ -14,15 +14,35 @@ void SelectedPiece::SwapPieceSetPointers() {
     std::swap(teamptr, oppptr);
 }
 
+void SelectedPiece::CheckForClicked(std::vector<Piece*>* _teamptr) {
+    // Has the user clicked within the window boundaries
+    if (!mouse.UnheldClick(window.currentRect)) return;
+
+    if (!std::any_of(_teamptr->begin(), _teamptr->end(), [&](Piece* piece)
+    {
+        if (piece->CheckClicked()) {
+            // piece was clicked, so update the selected piece
+            ChangeSelectedPiece(piece);
+            return true;
+        }
+        return false;
+    })) {
+        // no piece was clicked
+        ChangeSelectedPiece(nullptr);
+    }
+}
+
 void SelectedPiece::ChangeSelectedPiece(Piece *_newSelected) {
+    // clear selectedPiece pointers
     if (selectedPiece != nullptr) {
         selectedPiece->UpdateSelected();
+        selectedPiece = nullptr;
         info_selectedPiece = nullptr;
     }
 
+    // set new selectedPiece
     if ((selectedPiece = _newSelected) != nullptr) {
         selectedPiece->UpdateSelected();
-        selectedPiece->FetchMoves(*teamptr, *oppptr, *boardptr);
         info_selectedPiece = selectedPiece->GetPieceInfoPtr();
     }
 }
@@ -32,7 +52,6 @@ bool SelectedPiece::MadeMove(std::vector<Piece*>* _oppptr) {
 
     auto movesList =  *selectedPiece->GetAvailableMovesPtr();
     if (movesList.empty()) {
-        printf("empty");
         return false;
     }
 
@@ -42,7 +61,7 @@ bool SelectedPiece::MadeMove(std::vector<Piece*>* _oppptr) {
         boardptr->GetBorderedRectFromPosition(moveRect, move.position);
 
         // test if mouse click is inside the rect
-        if (mouseInput.InRect(moveRect)) {
+        if (mouse.UnheldClick(moveRect)) {
             // move selected piece
             selectedPiece->MoveTo(move.position, *boardptr);
             selectedPiece->ClearMoves();

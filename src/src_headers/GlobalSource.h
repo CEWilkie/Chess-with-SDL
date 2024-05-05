@@ -31,31 +31,50 @@ struct Obj_Window {
 inline Obj_Window window;
 
 
-struct Mouse_Input {
-    bool active = false;
-    bool prevactive = false;
-    bool heldactive = false;
-    bool occupied = false;
-    Position<int, int> position {};
+class Mouse {
+    private:
+        bool active = false;
+        bool prevactive = false;
+        bool heldactive = false;
+        bool clickLock = false;
+        Position<int, int> position {};
 
-    void UpdateState() {
-        // Update position
-        SDL_GetMouseState(&position.x, &position.y);
+    public:
+        void UpdateState(bool mouseDown) {
+            // Update position
+            SDL_GetMouseState(&position.x, &position.y);
 
-        // Update holdvalue
-        heldactive = (prevactive && active);
-    }
+            // prevent mouseInputs
+            if (clickLock) return;
 
-    bool InRadius(Position<int, int> pos, int radius) const {
-        // Return result
-        return (std::pow(position.x - pos.x, 2) + std::pow(position.y - pos.y, 2) == std::pow(radius, 2));
-    }
+            // Update click values
+            prevactive = active;
+            active = mouseDown;
+            heldactive = (prevactive && active);
+        }
 
-    bool InRect(SDL_Rect rect) const {
-        // return result
-        return abs(position.x - (rect.x + rect.w/2)) <= rect.w/2 && abs(position.y - (rect.y + rect.h/2)) <= rect.h/2;
-    }
+        Position<int, int> GetMousePosition() { return position; }
+
+        void LockMouseInput(bool lock) { clickLock = lock; }
+
+        bool InRadius(Position<int, int> pos, int radius) const {
+            // Return result
+            return (std::pow(position.x - pos.x, 2) + std::pow(position.y - pos.y, 2) == std::pow(radius, 2));
+        }
+
+        bool InRect(SDL_Rect rect) const {
+            // return result
+            return abs(position.x - (rect.x + rect.w/2)) <= rect.w/2 && abs(position.y - (rect.y + rect.h/2)) <= rect.h/2;
+        }
+
+        bool UnheldClick(SDL_Rect rect) const {
+            return active && !heldactive && InRect(rect);
+        }
+
+        bool HeldClick(SDL_Rect rect) const {
+            return active && heldactive && InRect(rect);
+        }
 };
-inline Mouse_Input mouseInput;
+inline Mouse mouse;
 
 #endif //CHESS_WITH_SDL_GLOBALSOURCE_H

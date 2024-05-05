@@ -49,6 +49,7 @@ class Board{
             w = T(tileWidth);
             h = T(tileHeight);
         }
+        static void GetTileRowsColumns(int& _rows, int& _cols) ;
         void GetBoardBLPosition(int& x, int& y) const;
         void GetTileRectFromPosition(SDL_Rect& rect, Position<char, int> position) const;
         void GetBorderedRectFromPosition(SDL_Rect &rect, Position<char, int> position) const;

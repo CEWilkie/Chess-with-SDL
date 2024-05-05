@@ -50,17 +50,17 @@ void Piece::GetRectOfBoardPosition(const Board& board) {
 }
 
 void Piece::DisplayPiece() {
-    // Dont display piece if captured
+    // Don't display piece if captured
     if (captured) return;
 
     if(selected) {
         SDL_RenderCopy(window.renderer, moveHighlights[0], nullptr, &boardposRect);
     }
 
-    // whilst piece is clicked, and mouse down, move to mouse
-    if(selected && mouseInput.active) {
-        pieceRect.x = mouseInput.position.x - pieceRect.w/2;
-        pieceRect.y = mouseInput.position.y - pieceRect.h/2;
+    // move to mouse whilst the mousdown is held from initial click
+    if(followMouse) {
+        pieceRect.x = mouse.GetMousePosition().x - pieceRect.w / 2;
+        pieceRect.y = mouse.GetMousePosition().y - pieceRect.h / 2;
     }
     else {
         pieceRect = boardposRect;
@@ -78,6 +78,10 @@ int Piece::PieceOnPosition(const std::vector<Piece *> &_teamPieces, const std::v
 
     // Check if team is on position
     if (std::any_of(_teamPieces.begin(), _teamPieces.end(), [&](Piece* piece){
+        // ignore captured pieces
+        if (piece->captured) return false;
+
+        // check non-captured piece
         return (piece->info->gamepos.x == _targetPos.x && piece->info->gamepos.y == _targetPos.y);
     })) {
         return -1;
@@ -85,6 +89,10 @@ int Piece::PieceOnPosition(const std::vector<Piece *> &_teamPieces, const std::v
 
     // Check if enemy is on position
     if (std::any_of(_oppPieces.begin(), _oppPieces.end(), [&](Piece* piece){
+        // ignore captured pieces
+        if (piece->captured) return false;
+
+        // check non-captured piece
         return (piece->info->gamepos.x == _targetPos.x && piece->info->gamepos.y == _targetPos.y);
     })) {
         return 1;
@@ -103,24 +111,31 @@ void Piece::FetchMoves(const std::vector<Piece*> &_teamPieces, const std::vector
      * Move 2 if not yet moved
      */
 
-    // only fetch moves if the current validMoves list is empty, and whilst piece is not captured
-    if (!validMoves.empty() || captured) return;
+    // only fetch moves if the moves have not been updated, and whilst piece is not captured
+    if (updatedMoves || captured) return;
 
+    // ensure valid moves is empty
+    validMoves.clear();
+
+    // normal moves
     // check that no pieces are blocking the next tile in direction pawn is moving
     if(PieceOnPosition(_teamPieces, _oppPieces, {info->gamepos.x, info->gamepos.y + dir}) == 0){
         validMoves.push_back({{info->gamepos.x, info->gamepos.y + dir}, false});
 
         // check for moving forwards 2 spaces
         if (!hasMoved) {
-            // check that no pieces are blocking the second tile in direction pawn is moving
+            // check that no pieces are blocking the second next tile in direction pawn is moving
             if(PieceOnPosition(_teamPieces, _oppPieces, {info->gamepos.x, info->gamepos.y+(2*dir)}) == 0){
                 validMoves.push_back({{info->gamepos.x, info->gamepos.y + (2*dir)}, false});
             }
         }
     }
 
-    // check for piece on sides
+    // check for capture moves
     for (Piece* piece : _oppPieces) {
+        // ignore captured pieces
+        if (piece->captured) continue;
+
         // check left and right side
         if (piece->info->gamepos.x == info->gamepos.x - 1 || piece->info->gamepos.x == info->gamepos.x + 1){
             // check in front
@@ -134,10 +149,30 @@ void Piece::FetchMoves(const std::vector<Piece*> &_teamPieces, const std::vector
             }
         }
     }
+
+    updatedMoves = true;
+}
+
+void Piece::EnforceBorderOnMoves() {
+    // Removes any moves from the valid moves list that go past the border.
+    int rows, cols;
+    Board::GetTileRowsColumns(rows, cols);
+
+    for (auto iter = validMoves.begin(); iter != validMoves.end();)  {
+        // check if move exceeds y positions then check x positions
+        if ((iter->position.y < 1 || iter->position.y > rows) ||
+        (iter->position.x < 'A' || iter->position.x > char('A' + cols))){
+            validMoves.erase(iter);
+        }
+        else {
+            iter++;
+        }
+    }
 }
 
 void Piece::ClearMoves() {
     validMoves.clear();
+    updatedMoves = false;
 }
 
 void Piece::DisplayMoves(const Board& board) {
@@ -156,12 +191,8 @@ void Piece::DisplayMoves(const Board& board) {
     }
 }
 
-bool Piece::MouseHover() {
-    return mouseInput.InRect(pieceRect);
-}
-
 bool Piece::CheckClicked() {
-    return mouseInput.active && mouseInput.InRect(pieceRect) && !mouseInput.heldactive;
+    return  mouse.UnheldClick(boardposRect);
 }
 
 bool Piece::UpdateSelected() {
@@ -169,13 +200,7 @@ bool Piece::UpdateSelected() {
     if  (captured) return false;
 
     // user clicked in region of piece, so piece is selected
-    if (mouseInput.active && mouseInput.InRect(pieceRect)) selected = true;
-
-    // user clicked outside region of piece, piece is unselected
-    if (mouseInput.active && !mouseInput.InRect(pieceRect)) {
-        selected = false;
-    }
-
+    selected = mouse.UnheldClick(boardposRect);
     return selected;
 }
 
@@ -202,5 +227,6 @@ void Piece::MoveTo(Position<char, int> _movepos, const Board &_board) {
 }
 
 void Piece::Captured() {
+    // update captured value to prevent piece from being interacted with or displayed.
     captured = true;
 }

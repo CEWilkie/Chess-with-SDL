@@ -18,6 +18,7 @@ class SelectedPiece {
     public:
         SelectedPiece(std::vector<Piece*>* _teamptr, std::vector<Piece*>* _oppptr, Board* _boardptr);
         void SwapPieceSetPointers();
+        void CheckForClicked(std::vector<Piece*>* _teamptr);
         void ChangeSelectedPiece(Piece* _newSelected);
         bool MadeMove(std::vector<Piece*>* _oppptr);
 
