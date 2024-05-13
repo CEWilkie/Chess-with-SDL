@@ -6,7 +6,7 @@
 
 Piece::Piece(const std::string& _name, const std::string& _color, Position<char, int> _gamepos) {
     // set piece info values
-    info = new Piece_Info{_name, _color, _color[0]};
+    info = new Piece_Info{_name, (char)tolower(_gamepos.x), _color, _color[0], _gamepos};
 
     // Set path to png file of piece
     // Eg: Knight_White.png. the relevant image files are named as such.
@@ -69,7 +69,7 @@ void Piece::DisplayPiece() {
     SDL_RenderCopy(window.renderer, pieceTexture, nullptr, &pieceRect);
 }
 
-int Piece::PieceOnPosition(const std::vector<Piece *> &_teamPieces, const std::vector<Piece *> &_oppPieces, Position<char, int> _targetPos) {
+int Piece::PositionOccupied(const std::vector<Piece *> &_teamPieces, const std::vector<Piece *> &_oppPieces, Position<char, int> _targetPos) {
     /*
      * Function checks the target position and returns a value depending upon if there is a piece on the tile, if its
      * an enemy piece, or if the tile is empty.
@@ -102,6 +102,21 @@ int Piece::PieceOnPosition(const std::vector<Piece *> &_teamPieces, const std::v
     return 0;
 }
 
+Piece* Piece::GetOpponentOnPosition(const std::vector<Piece *> &_oppPieces, Position<char, int> _targetPos) {
+    for (auto oppPiece : _oppPieces) {
+        // ignore captured pieces
+        if (oppPiece->captured) continue;
+
+        // check non-captured piece
+        if (oppPiece->info->gamepos.x == _targetPos.x && oppPiece->info->gamepos.y == _targetPos.y) {
+            return oppPiece;
+        }
+    }
+
+    // no capturable pieces;
+    return nullptr;
+}
+
 void Piece::FetchMoves(const std::vector<Piece*> &_teamPieces, const std::vector<Piece*> &_oppPieces, const Board& _board) {
     /*
      * These moves apply to the Pawn piece. This function is overwritten by other pieces. Move Summary:
@@ -119,14 +134,14 @@ void Piece::FetchMoves(const std::vector<Piece*> &_teamPieces, const std::vector
 
     // normal moves
     // check that no pieces are blocking the next tile in direction pawn is moving
-    if(PieceOnPosition(_teamPieces, _oppPieces, {info->gamepos.x, info->gamepos.y + dir}) == 0){
-        validMoves.push_back({{info->gamepos.x, info->gamepos.y + dir}, false});
+    if(PositionOccupied(_teamPieces, _oppPieces, {info->gamepos.x, info->gamepos.y + dir}) == 0){
+        validMoves.push_back({{info->gamepos.x, info->gamepos.y + dir}});
 
         // check for moving forwards 2 spaces
         if (!hasMoved) {
             // check that no pieces are blocking the second next tile in direction pawn is moving
-            if(PieceOnPosition(_teamPieces, _oppPieces, {info->gamepos.x, info->gamepos.y+(2*dir)}) == 0){
-                validMoves.push_back({{info->gamepos.x, info->gamepos.y + (2*dir)}, false});
+            if(PositionOccupied(_teamPieces, _oppPieces, {info->gamepos.x, info->gamepos.y + (2 * dir)}) == 0){
+                validMoves.push_back({{info->gamepos.x, info->gamepos.y + (2*dir)}});
             }
         }
     }
@@ -150,6 +165,8 @@ void Piece::FetchMoves(const std::vector<Piece*> &_teamPieces, const std::vector
         }
     }
 
+    EnforceBorderOnMoves();
+
     updatedMoves = true;
 }
 
@@ -161,7 +178,7 @@ void Piece::EnforceBorderOnMoves() {
     for (auto iter = validMoves.begin(); iter != validMoves.end();)  {
         // check if move exceeds y positions then check x positions
         if ((iter->position.y < 1 || iter->position.y > rows) ||
-        (iter->position.x < 'A' || iter->position.x > char('A' + cols))){
+        (iter->position.x < 'a' || iter->position.x > char('a' + cols - 1))){
             validMoves.erase(iter);
         }
         else {
@@ -173,6 +190,10 @@ void Piece::EnforceBorderOnMoves() {
 void Piece::ClearMoves() {
     validMoves.clear();
     updatedMoves = false;
+}
+
+void Piece::UpdateCheckerVars() {
+
 }
 
 void Piece::DisplayMoves(const Board& board) {

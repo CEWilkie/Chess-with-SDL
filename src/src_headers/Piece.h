@@ -14,9 +14,11 @@
 #include "Board.h"
 
 class Piece;
+class Board;
 
 struct Piece_Info {
     std::string name = "Pawn";
+    char pieceID = 'a';
     std::string color = "White";
     char colID = 'W';
     Position<char, int> gamepos {'A', 7};
@@ -24,7 +26,7 @@ struct Piece_Info {
 
 struct AvailableMove{
     Position<char, int> position {};
-    bool capture {};
+    bool capture = false;
     Piece* target = nullptr;
 };
 
@@ -64,10 +66,12 @@ class Piece {
         void DisplayPiece();
 
         // Fetching Moves
-        static int PieceOnPosition(const std::vector<Piece*> &_teamPieces, const std::vector<Piece*> &oppPieces, Position<char, int> _targetPos);
+        static int PositionOccupied(const std::vector<Piece*> &_teamPieces, const std::vector<Piece*> &_oppPieces, Position<char, int> _targetPos);
+        static Piece* GetOpponentOnPosition(const std::vector<Piece*> &_oppPieces, Position<char, int> _targetPos);
         void EnforceBorderOnMoves();
-        void virtual FetchMoves(const std::vector<Piece*> &_teamPieces, const std::vector<Piece*> &_oppPieces, const Board& _board);
+        virtual void FetchMoves(const std::vector<Piece*> &_teamPieces, const std::vector<Piece*> &_oppPieces, const Board& _board);
         void ClearMoves();
+        virtual void UpdateCheckerVars();
 
         void Captured();
         void DisplayMoves(const Board& board);

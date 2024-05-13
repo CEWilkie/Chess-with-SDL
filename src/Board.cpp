@@ -12,7 +12,10 @@ Board::Board() {
     if ((tileTextures[1] = IMG_LoadTexture(window.renderer, whitePath.c_str())) == nullptr) {
         LogError("Failed to obtain pieceTexture", SDL_GetError(), false);
     }
-    if ((boardBase = IMG_LoadTexture(window.renderer, basePath.c_str())) == nullptr) {
+    if ((boardBases[0] = IMG_LoadTexture(window.renderer, basePath.c_str())) == nullptr) {
+        LogError("Failed to obtain pieceTexture", SDL_GetError(), false);
+    }
+    if ((boardBases[1] = IMG_LoadTexture(window.renderer, secondBasePath.c_str())) == nullptr) {
         LogError("Failed to obtain pieceTexture", SDL_GetError(), false);
     }
 
@@ -28,11 +31,6 @@ Board::Board() {
 }
 
 int Board::CreateBoardTexture() {
-    // Set sizes for rect
-    // determine minimum dimension to act as side length
-    SDL_GetWindowSize(window.window, &boardRect.w, &boardRect.h);
-    boardRect.w = boardRect.h = std::min(boardRect.w, boardRect.h);
-
     // determine tile size
     tileWidth = int(0.8 * (float)boardRect.w / columns);
     tileHeight = int(0.8 * (float)boardRect.h / rows);
@@ -53,7 +51,7 @@ int Board::CreateBoardTexture() {
 
     // Add in Board Base pieceTexture:
     SDL_Rect tileRect {0, 0, boardRect.w, boardRect.h};
-    SDL_RenderCopy(window.renderer, boardBase, nullptr, &tileRect);
+    SDL_RenderCopy(window.renderer, boardBases[0], nullptr, &tileRect);
 
     // Create pieceTexture using the tile textures
     tileRect = {int(boardRect.w * 0.1), int(boardRect.h * 0.1), tileWidth, tileHeight};
@@ -69,8 +67,8 @@ int Board::CreateBoardTexture() {
         tileRect.y += tileRect.h;
     }
 
-    // Create board base pieceTexture
-    if ((boardBase = IMG_LoadTexture(window.renderer, basePath.c_str())) == nullptr) {
+    // Create board base texture
+    if ((boardBases[0] = IMG_LoadTexture(window.renderer, basePath.c_str())) == nullptr) {
         LogError("Failed to create piece pieceTexture", SDL_GetError(), false);
         return -1;
     }
@@ -100,7 +98,7 @@ int Board::CreateBoardTexture() {
         w = int((float)w / ratio);
 
         // Create Rect
-        row_label_rects[r] = {boardRect.w / 20 - w / 2, boardRect.h * 9/10  - tileHeight- (tileHeight * r), w, h};
+        row_label_rects[r] = {boardRect.x + boardRect.w / 20 - w / 2, boardRect.h * 9/10  - tileHeight- (tileHeight * r), w, h};
     }
 
     // Create labels for columns
@@ -121,7 +119,7 @@ int Board::CreateBoardTexture() {
         w = int((float)w / ratio);
 
         // Create Rect
-        col_label_rects[c] = {boardRect.w * 1/10 + tileWidth * c + tileWidth/2 - w/2, boardRect.h * 9/10, w, h};
+        col_label_rects[c] = {boardRect.x + boardRect.w * 1/10 + tileWidth * c + tileWidth/2 - w/2, boardRect.h * 9/10, w, h};
     }
 
     // reset render target to window
@@ -131,7 +129,7 @@ int Board::CreateBoardTexture() {
 }
 
 void Board::DisplayGameBoard() {
-    // Display Board
+    // Display Board background
     SDL_RenderCopy(window.renderer, boardTexture, nullptr, &boardRect);
 
     // Display row labels
@@ -143,6 +141,12 @@ void Board::DisplayGameBoard() {
     for (int c = 0; c < columns; c++) {
         SDL_RenderCopy(window.renderer, col_label_textures[c], nullptr, &col_label_rects[c]);
     }
+
+    // display menu background
+    SDL_RenderCopy(window.renderer, boardBases[1], nullptr, &menuRect);
+
+    // display game info background
+    SDL_RenderCopy(window.renderer, boardBases[1], nullptr, &gameInfoRect);
 }
 
 void Board::GetTileRowsColumns(int &_rows, int &_cols) {
@@ -151,7 +155,7 @@ void Board::GetTileRowsColumns(int &_rows, int &_cols) {
 }
 
 void Board::GetBoardBLPosition(int& x, int& y) const {
-    x = boardRect.w/10;
+    x = boardRect.x + boardRect.w/10;
     y = boardRect.h * 9/10 - tileHeight;
 }
 
@@ -160,7 +164,7 @@ void Board::GetTileRectFromPosition(SDL_Rect &rect, Position<char, int> position
     GetBoardBLPosition(rect.x, rect.y);
 
     // now add the position values to the rect values
-    rect.x += (tileWidth * (position.x-'A'));
+    rect.x += (tileWidth * (position.x-'a'));
     rect.y -= (tileWidth * (position.y - 1));
     rect.w = tileWidth;
     rect.h = tileHeight;
@@ -171,7 +175,7 @@ void Board::GetBorderedRectFromPosition(SDL_Rect &rect, Position<char, int> posi
     GetBoardBLPosition(rect.x, rect.y);
 
     // now add the position values to the rect values
-    rect.x += (tileWidth * (position.x-'A'));
+    rect.x += (tileWidth * (position.x-'a'));
     rect.y -= (tileWidth * (position.y - 1));
     rect.w = tileWidth;
     rect.h = tileHeight;
@@ -183,4 +187,50 @@ void Board::GetBorderedRectFromPosition(SDL_Rect &rect, Position<char, int> posi
     // now move the tl of rect by 10% of tileWidth/tileHeight to centre the rect
     rect.x += int((float)tileWidth*tile_borderWidth);
     rect.y += int((float)tileHeight*tile_borderHeight);
+}
+
+bool Board::CreateTempGameFile() {
+    // Get date:
+    char timeChar[sizeof("yyyy-mm-ddThh:mm:ssZ")];
+    time_t t = time(nullptr);
+    std::strftime(timeChar, sizeof(timeChar), "%H_%M_%S_%d_%m_%Y", localtime(&t));
+    std::string timeString = timeChar;
+
+    std::string dirName = "Game_" + timeString;
+    moveListFile = "../Temp/" + dirName + "_ACNmovelist.txt";
+
+    std::ofstream file(moveListFile.c_str());
+    if (!file.good()) {
+        file.close();
+        return false;
+    }
+    file.close();
+
+    startPosFile = "../Temp/" + dirName + "_ACNstartpos.csv";
+    file.open(startPosFile.c_str());
+    if (!file.good()) {
+        file.close();
+        return false;
+    }
+    file.close();
+
+    return true;
+}
+
+bool Board::WriteStartPositionsToFile(const std::vector<Piece *> &_allPieces) {
+    std::fstream spFile(startPosFile.c_str());
+    if (!spFile.good()) {
+        spFile.close();
+        return false;
+    }
+
+    for (auto piece : _allPieces) {
+        Piece_Info* pInfo = piece->GetPieceInfoPtr();
+        std::string pInfoStr = pInfo->color + "," + pInfo->name + "," + pInfo->gamepos.x + "," + std::to_string(pInfo->gamepos.y);
+        spFile << pInfoStr << std::endl;
+    }
+
+    spFile.close();
+
+    return true;
 }

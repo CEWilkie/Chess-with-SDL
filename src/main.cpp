@@ -6,33 +6,41 @@
 #include <iostream>
 #include <SDL.h>
 #include <SDL_ttf.h>
+#include <fstream>
 
 #include "src_headers/GlobalSource.h"
 #include "src_headers/Board.h"
 #include "src_headers/Piece.h"
 #include "src_headers/SelectedPiece.h"
+#include "src_headers/Knight.h"
+#include "src_headers/Bishop.h"
+#include "src_headers/Rook.h"
+#include "src_headers/Queen.h"
+#include "src_headers/King.h"
 
-int EnsureWindowSize() {
+int EnsureWindowSize(Board* _board) {
     // Fetch rect of current window properties
     SDL_Rect rect_current = {0, 0};
     SDL_GetWindowSize(window.window, &rect_current.w, &rect_current.h);
     //SDL_GetWindowPosition(Window.window, &rect_current.x, &rect_current.y);
 
+    // fetch min size boundaries
+    int minW, minH;
+    _board->GetMinDimensions(minW, minH);
+
     // detect if window has changed size
     int changed = 0;
-    if(rect_current.h != window.currentRect.h || rect_current.w != window.currentRect.w) {
+    if(rect_current.h != window.currentRect.h || rect_current.w != window.currentRect.w) { // changed (generic)
         changed = 1;
         window.currentRect = rect_current;
     }
-
-    // enforce minimum size
-    if (rect_current.w < 500) {
-        SDL_SetWindowSize(window.window, 500, rect_current.h);
+    if (rect_current.w < minW) { // below min
         changed = -1;
+        SDL_SetWindowSize(window.window, minW, rect_current.h);
     }
-    if (rect_current.h < 500) {
-        SDL_SetWindowSize(window.window, rect_current.w, 500);
+    if (rect_current.h < minH) { // below min
         changed = -1;
+        SDL_SetWindowSize(window.window, rect_current.w, minH);
     }
 
     return changed;
@@ -73,6 +81,9 @@ int main(int argc, char** argv) {
         LogError("Failed to retrive display borders size", SDL_GetError(), false);
     }
 
+    // Set Window Background
+    window.background = IMG_LoadTexture(window.renderer, "../Resources/GameBoard/Green_Background.png");
+
 //    // fetch device screen dimensions and apply border sizes to w, h
 //    if(SDL_GetDisplayUsableBounds(0, &window.currentRect) != 0) {
 //        LogError("Failure to obtain display usable bounds", SDL_GetError(), false);
@@ -92,47 +103,70 @@ int main(int argc, char** argv) {
      *  CONSTRUCT GAME ELEMENTS
      */
 
-    // Construct Window Background
-    window.background = IMG_LoadTexture(window.renderer, "../Resources/GameBoard/Green_Background.png");
 
     // Construct Board
     Board board;
     board.CreateBoardTexture();
+    board.CreateTempGameFile();
 
     /*
      * CONSTRUCT WHITE PIECES
      */
     std::vector<Piece*> all_pieces;
     std::vector<Piece*> white_pieces;
+    std::vector<Piece*> black_pieces;
 
-    // Create Pawns
-    for (int p = 0; p < 8; p++) {
-        // Create new pawn
-        auto* pawn = new Piece("Pawn", "White_Temp", {char('A'+p), 2});
-        pawn->CreateTextures();
-        pawn->GetRectOfBoardPosition(board);
+    // Read standard board from file
+    std::fstream boardStandardFile("../RequiredFiles/BasicSetup.csv");
+    std::string pieceString;
+    std::vector<std::string> pieceElements;
+    char div = ',';
+    uint64_t splitpos;
 
-        // add to pieces vector
-        white_pieces.push_back(pawn);
-        all_pieces.push_back(pawn);
+    while (std::getline(boardStandardFile, pieceString)) {
+        pieceElements.clear();
+
+        while ((splitpos = pieceString.find(div)) != std::string::npos) {
+            pieceElements.push_back(pieceString.substr(0, splitpos));
+            pieceString.erase(0, splitpos + 1);
+        }
+        pieceElements.push_back(pieceString);
+
+        // construct Piece from elements taken from file
+        Piece* newPiece = nullptr;
+        if (pieceElements[1] == "Pawn") {
+            newPiece = new Piece("Pawn", pieceElements[0], {(char)pieceElements[2][0], std::stoi(pieceElements[3])});
+        }
+        if (pieceElements[1] == "Knight") {
+            newPiece = new Knight("Knight", pieceElements[0], {(char)pieceElements[2][0], std::stoi(pieceElements[3])});
+        }
+        if (pieceElements[1] == "Bishop") {
+            newPiece = new Bishop("Knight", pieceElements[0], {(char)pieceElements[2][0], std::stoi(pieceElements[3])});
+        }
+        if (pieceElements[1] == "Rook") {
+            newPiece = new Rook("Knight", pieceElements[0], {(char)pieceElements[2][0], std::stoi(pieceElements[3])});
+        }
+        if (pieceElements[1] == "King") {
+            newPiece = new King("Knight", pieceElements[0], {(char)pieceElements[2][0], std::stoi(pieceElements[3])});
+        }
+        if (pieceElements[1] == "Queen") {
+            newPiece = new Queen("Knight", pieceElements[0], {(char)pieceElements[2][0], std::stoi(pieceElements[3])});
+        }
+
+        if (newPiece != nullptr) {
+            newPiece->CreateTextures();
+            newPiece->GetRectOfBoardPosition(board);
+            (pieceElements[0][0] == 'W') ? white_pieces.push_back(newPiece) : black_pieces.push_back(newPiece);
+            all_pieces.push_back(newPiece);
+        }
     }
+    boardStandardFile.close();
 
-    /*
-     * CONSTRUCT BLACK PIECES
-     */
-     std::vector<Piece*> black_pieces;
+    printf("CONSTRUCTED %zu WHITE PIECES, %zu BLACK PIECES, %zu TOTAL PIECES",
+           white_pieces.size(), black_pieces.size(), all_pieces.size());
 
-    // Create Pawns
-    for (int p = 0; p < 8; p++) {
-        // Create new pawn
-        auto* pawn = new Piece("Pawn", "Black_Temp", {char('A'+p), 7});
-        pawn->CreateTextures();
-        pawn->GetRectOfBoardPosition(board);
 
-        // add to pieces vector
-        black_pieces.push_back(pawn);
-        all_pieces.push_back(pawn);
-    }
+    board.WriteStartPositionsToFile(all_pieces);
 
     /*
      * CONSTRUCT ADDITIONAL
@@ -162,6 +196,7 @@ int main(int argc, char** argv) {
             piece->FetchMoves(*teamptr, *oppptr, board);
             piece->EnforceBorderOnMoves();
             piece->DisplayMoves(board);
+
         }
 
         /*
@@ -202,6 +237,7 @@ int main(int argc, char** argv) {
             // remove moves from this turn
             for (auto piece : all_pieces) {
                 piece->ClearMoves();
+                piece->UpdateCheckerVars();
             }
 
             selectedPiece.SwapPieceSetPointers();
@@ -213,7 +249,7 @@ int main(int argc, char** argv) {
          *  RECREATE TEXTURES IF REQUIRED
          */
 
-        if (EnsureWindowSize() != 0){
+        if (EnsureWindowSize(&board) != 0){
             // board
             board.CreateBoardTexture();
 
