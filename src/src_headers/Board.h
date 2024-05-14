@@ -58,6 +58,8 @@ class Board{
         // Gameplay recording vars
         std::string moveListFile;
         std::string startPosFile;
+        int numEots = 0;
+        int turn = 1;
 
     public:
         Board();
@@ -87,6 +89,8 @@ class Board{
         // Gameplay Recording
         bool CreateTempGameFile();
         bool WriteStartPositionsToFile(const std::vector<Piece*> &_allPieces);
+        bool WriteMoveToFile(const std::string& _move);
+        void IncrementTurn();
 };
 
 

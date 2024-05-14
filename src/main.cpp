@@ -242,6 +242,12 @@ int main(int argc, char** argv) {
 
             selectedPiece.SwapPieceSetPointers();
             std::swap(teamptr, oppptr);
+
+            std::string lastMove;
+            selectedPiece.GetMove(lastMove);
+            board.WriteMoveToFile(lastMove);
+            board.IncrementTurn();
+
             eot = false;
         }
 

@@ -231,6 +231,27 @@ bool Board::WriteStartPositionsToFile(const std::vector<Piece *> &_allPieces) {
     }
 
     spFile.close();
-
     return true;
+}
+
+bool Board::WriteMoveToFile(const std::string& _move) {
+    std::fstream mlFile(moveListFile.c_str(), std::ios::app);
+    if (!mlFile.good()) {
+        mlFile.close();
+        return false;
+    }
+
+    if (numEots == 0) mlFile << std::endl << turn << ". ";
+    mlFile << _move << " ";
+
+    mlFile.close();
+    return true;
+}
+
+void Board::IncrementTurn() {
+    numEots += 1;
+    if (numEots == 2) {
+        numEots = 0;
+        turn += 1;
+    }
 }

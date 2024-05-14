@@ -47,13 +47,15 @@ void SelectedPiece::ChangeSelectedPiece(Piece *_newSelected) {
     }
 }
 
-bool SelectedPiece::MadeMove(std::vector<Piece*>* _oppptr) {
+bool SelectedPiece::MadeMove(std::vector<Piece*>* _teamptr) {
     if (selectedPiece == nullptr) return false;
 
     auto movesList =  *selectedPiece->GetAvailableMovesPtr();
     if (movesList.empty()) {
         return false;
     }
+
+    AvailableMove* selectedMove = nullptr;
 
     for (auto move : *selectedPiece->GetAvailableMovesPtr()) {
         // Fetch the rect bounds of the move and fit to within the 80% dimensions
@@ -62,19 +64,63 @@ bool SelectedPiece::MadeMove(std::vector<Piece*>* _oppptr) {
 
         // test if mouse click is inside the rect
         if (mouse.UnheldClick(moveRect)) {
-            // move selected piece
-            selectedPiece->MoveTo(move.position, *boardptr);
-            selectedPiece->ClearMoves();
-
-            //if move is to capture a target, mark target as captured
-            if (move.capture) move.target->Captured();
-
-            // unselect selected piece
-            selectedPiece->UnselectPiece();
-            selectedPiece = nullptr;
-            return true;
+            selectedMove = &move;
+            break;
         }
     }
 
-    return false;
+    // break early if no move selected
+    if (selectedMove == nullptr) return false;
+
+    // create ACN movestr from the move
+    Piece_Info* pInfo = selectedPiece->GetPieceInfoPtr();
+    lastMove = "";
+    if (selectedMove->capture || selectedPiece->GetPieceInfoPtr()->name != "Pawn") lastMove = pInfo->pieceID;
+
+    // if two of the same pieces could have moved to the position, add col/row id:
+    if (std::any_of(teamptr->begin(), teamptr->end(), [&](Piece* piece){
+        if (piece == selectedPiece) return false;
+        if (piece->GetPieceInfoPtr()->name != selectedPiece->GetPieceInfoPtr()->name) return false;
+
+        for (auto move : *piece->GetAvailableMovesPtr()) {
+            if (move.position.x == selectedMove->position.x && move.position.y == selectedMove->position.y) {
+                printf("piece: %s", piece->GetPieceInfoPtr()->name.c_str());
+                return true;
+            }
+        }
+        return false;
+    }))
+    {
+        // check piece on same column
+        if (std::any_of(teamptr->begin(), teamptr->end(), [&](Piece* piece){
+            if (piece == selectedPiece) return false;
+            return (piece->GetPieceInfoPtr()->gamepos.x == pInfo->gamepos.x);
+        })) lastMove += std::to_string(pInfo->gamepos.y);
+
+        // check piece on same row
+        if (std::any_of(teamptr->begin(), teamptr->end(), [&](Piece* piece){
+            if (piece == selectedPiece) return false;
+            return (piece->GetPieceInfoPtr()->gamepos.y == pInfo->gamepos.y);
+        })) lastMove += pInfo->gamepos.x;
+    };
+
+
+    if (selectedMove->capture) lastMove += "x";
+    lastMove += selectedMove->position.x + std::to_string(selectedMove->position.y);
+
+    // move selected piece
+    selectedPiece->MoveTo(selectedMove->position, *boardptr);
+    selectedPiece->ClearMoves();
+
+    //if move is to capture a target, mark target as captured
+    if (selectedMove->capture) selectedMove->target->Captured();
+
+    // unselect selected piece
+    selectedPiece->UnselectPiece();
+    selectedPiece = nullptr;
+    return true;
+}
+
+void SelectedPiece::GetMove(std::string &_move) {
+    _move = lastMove;
 }

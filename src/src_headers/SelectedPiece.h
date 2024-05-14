@@ -14,14 +14,15 @@ class SelectedPiece {
         std::vector<Piece*>* teamptr;
         std::vector<Piece*>* oppptr;
         Board* boardptr;
+        std::string lastMove;
 
     public:
         SelectedPiece(std::vector<Piece*>* _teamptr, std::vector<Piece*>* _oppptr, Board* _boardptr);
         void SwapPieceSetPointers();
         void CheckForClicked(std::vector<Piece*>* _teamptr);
         void ChangeSelectedPiece(Piece* _newSelected);
-        bool MadeMove(std::vector<Piece*>* _oppptr);
-
+        bool MadeMove(std::vector<Piece*>* _teamptr);
+        void GetMove(std::string& _move);
 };
 
 
