@@ -31,8 +31,10 @@ void Knight::FetchMoves(const std::vector<Piece *> &_teamPieces, const std::vect
     for (int x = -2; x < 3; x++) {
         if (x==0) continue;
         int vDir = (abs(x) == 2) ? 1 : 2;
-        validMoves.push_back({char(info->gamepos.x-x), info->gamepos.y+vDir});
-        validMoves.push_back({char(info->gamepos.x-x), info->gamepos.y-vDir});
+        validMoves.emplace_back();
+        validMoves.back().SetPosition({char(info->gamepos.x-x), info->gamepos.y+vDir});
+        validMoves.emplace_back();
+        validMoves.back().SetPosition({char(info->gamepos.x-x), info->gamepos.y-vDir});
     }
 
     // ensure moves are within the A-H and 1-8 bounds
@@ -41,16 +43,15 @@ void Knight::FetchMoves(const std::vector<Piece *> &_teamPieces, const std::vect
     // check if move is team-occupied or a capture
     for (auto iter = validMoves.begin(); iter < validMoves.end();) {
         // remove team-occupied moves
-        if (PositionOccupied(_teamPieces, _oppPieces, iter->position) == -1) {
+        if (GetTeamPieceOnPosition(_teamPieces, iter->GetPosition()) != nullptr) {
             iter = validMoves.erase(iter);
             continue;
         }
 
         // apply capture target to capturing moves
         Piece* target;
-        if ((target = GetOpponentOnPosition(_oppPieces, iter->position)) != nullptr) {
-            iter->capture = true;
-            iter->target = target;
+        if ((target = GetOppPieceOnPosition(_oppPieces, iter->GetPosition())) != nullptr) {
+            iter->SetTarget(target);
         }
 
         iter++;

@@ -35,20 +35,21 @@ void Queen::FetchMoves(const std::vector<Piece *> &_teamPieces, const std::vecto
         dc = (direction == 1 || direction == 3) ? dir : 0;
 
         // set move to next tile in direction
-        AvailableMove move = {char(info->gamepos.x + dc), info->gamepos.y + dr};
+        AvailableMove move;
+        Position<char, int> movPos = {char(info->gamepos.x + dc), info->gamepos.y + dr};
+        move.SetPosition(movPos);
 
-        while ((0 < move.position.y && move.position.y <= maxRows) && ('a' <= move.position.x && move.position.x <= char('a' + maxCols - 1))) {
+        while ((0 < movPos.y && movPos.y <= maxRows) && ('a' <= movPos.x && movPos.x <= char('a' + maxCols - 1))) {
 
             // if the position is occupied by a teammember, do not add move, and change direction
-            if (PositionOccupied(_teamPieces, _oppPieces, move.position) == -1) {
+            if (GetTeamPieceOnPosition(_teamPieces, movPos) != nullptr) {
                 break;
             }
 
             // if the position is occupied by an enemy, mark move as a capture, add to list and change direction
             Piece* target;
-            if ((target = GetOpponentOnPosition(_oppPieces, move.position)) != nullptr) {
-                move.capture = true;
-                move.target = target;
+            if ((target = GetOppPieceOnPosition(_oppPieces, movPos)) != nullptr) {
+                move.SetTarget(target);
                 validMoves.push_back(move);
                 break;
             }
@@ -57,7 +58,8 @@ void Queen::FetchMoves(const std::vector<Piece *> &_teamPieces, const std::vecto
             validMoves.push_back(move);
 
             // next tile in direction
-            move.position = {char(move.position.x+dc), move.position.y+dr};
+            movPos = {char(movPos.x+dc), movPos.y+dr};
+            move.SetPosition(movPos);
         }
     }
 
@@ -68,19 +70,20 @@ void Queen::FetchMoves(const std::vector<Piece *> &_teamPieces, const std::vecto
         dc = (direction == 0 || direction == 1) ? 1 : -1;
 
         // set move to next tile in direction
-        AvailableMove move = {char(info->gamepos.x + dc), info->gamepos.y + dr};
+        AvailableMove move;
+        Position<char, int> movPos = {char(info->gamepos.x + dc), info->gamepos.y + dr};
+        move.SetPosition(movPos);
 
-        while ((0 < move.position.y && move.position.y <= maxRows) && ('a' <= move.position.x && move.position.x <= char('a' + maxCols - 1))) {
+        while ((0 < movPos.y && movPos.y <= maxRows) && ('a' <= movPos.x && movPos.x <= char('a' + maxCols - 1))) {
             // if the position is occupied by a teammember, do not add move, and change direction
-            if (PositionOccupied(_teamPieces, _oppPieces, move.position) == -1) {
+            if (GetTeamPieceOnPosition(_teamPieces, movPos) != nullptr) {
                 break;
             }
 
             // if the position is occupied by an enemy, mark move as a capture, add to list and change direction
             Piece* target;
-            if ((target = GetOpponentOnPosition(_oppPieces, move.position)) != nullptr) {
-                move.capture = true;
-                move.target = target;
+            if ((target = GetOppPieceOnPosition(_oppPieces, movPos)) != nullptr) {
+                move.SetTarget(target);
                 validMoves.push_back(move);
                 break;
             }
@@ -89,12 +92,12 @@ void Queen::FetchMoves(const std::vector<Piece *> &_teamPieces, const std::vecto
             validMoves.push_back(move);
 
             // next tile in direction
-            move.position = {char(move.position.x+dc), move.position.y+dr};
+            movPos = {char(movPos.x+dc), movPos.y+dr};
+            move.SetPosition(movPos);
         }
     }
 
     EnforceBorderOnMoves();
 
     updatedMoves = true;
-
 }

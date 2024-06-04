@@ -162,7 +162,7 @@ int main(int argc, char** argv) {
     }
     boardStandardFile.close();
 
-    printf("CONSTRUCTED %zu WHITE PIECES, %zu BLACK PIECES, %zu TOTAL PIECES",
+    printf("CONSTRUCTED %zu WHITE PIECES, %zu BLACK PIECES, %zu TOTAL PIECES\n",
            white_pieces.size(), black_pieces.size(), all_pieces.size());
 
 
@@ -190,13 +190,13 @@ int main(int argc, char** argv) {
         SDL_RenderCopy(window.renderer, window.background, nullptr, &window.currentRect);
         board.DisplayGameBoard();
 
-        // Display Pieces
+        // Display Pieces and fetch their moves
         for (Piece* piece : all_pieces) {
-            piece->DisplayPiece();
             piece->FetchMoves(*teamptr, *oppptr, board);
-            piece->EnforceBorderOnMoves();
-            piece->DisplayMoves(board);
+            piece->PreventMoveIntoCheck(*teamptr, *oppptr, board);
 
+            piece->DisplayPiece();
+            piece->DisplayMoves(board);
         }
 
         /*
@@ -230,6 +230,29 @@ int main(int argc, char** argv) {
         if (!eot) selectedPiece.CheckForClicked(teamptr);
 
         /*
+         * CHECKMATE + STALEMATE CHECKING
+         */
+
+
+        // Check if team pieces have any available moves
+        bool canMove = std::any_of(teamptr->begin(), teamptr->end(), [](Piece* piece) {
+            return !piece->GetAvailableMovesPtr()->empty();
+        });
+
+        // if there are no moves available, check if King is being checked by opp
+        if (!canMove && std::any_of(oppptr->begin(), oppptr->end(), [](Piece* piece){
+            return piece->IsCheckingKing();
+        })) {
+            // conditions met: checkmate
+            printf("CHECKMATE! 1:0");
+            running = false;
+        } else if (!canMove) {
+            // conditions met: stalemate
+            printf("STALEMATE! 0.5:0.5");
+            running = false;
+        }
+
+        /*
          *  END OF TURN MANAGEMENT
          */
 
@@ -237,6 +260,7 @@ int main(int argc, char** argv) {
             // remove moves from this turn
             for (auto piece : all_pieces) {
                 piece->ClearMoves();
+                piece->ClearNextMoves();
                 piece->UpdateCheckerVars();
             }
 

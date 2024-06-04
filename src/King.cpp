@@ -29,15 +29,18 @@ void King::FetchMoves(const std::vector<Piece *> &_teamPieces, const std::vector
 
     // fetch all moves assuming none result in king being checked
     AvailableMove move;
+    Position<char, int> movPos = {};
+
     for (int dc = -1; dc < 2; dc++) {
         for (int dr = -1; dr < 2; dr++) {
-            move.position = {char(info->gamepos.x+dc), info->gamepos.y+dr};
-            if (PositionOccupied(_teamPieces, _oppPieces, move.position) == -1) continue;
+            movPos = {char(info->gamepos.x+dc), info->gamepos.y+dr};
+            move.SetPosition(movPos);
+            move.SetTarget(nullptr);
+            if (GetTeamPieceOnPosition(_teamPieces, movPos) != nullptr) continue;
 
             Piece* target;
-            if ((target = GetOpponentOnPosition(_oppPieces, move.position)) != nullptr) {
-                move.capture = true;
-                move.target = target;
+            if ((target = GetOppPieceOnPosition(_oppPieces, movPos)) != nullptr) {
+                move.SetTarget(target);
             }
 
             validMoves.push_back(move);

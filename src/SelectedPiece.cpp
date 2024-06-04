@@ -60,7 +60,7 @@ bool SelectedPiece::MadeMove(std::vector<Piece*>* _teamptr) {
     for (auto move : *selectedPiece->GetAvailableMovesPtr()) {
         // Fetch the rect bounds of the move and fit to within the 80% dimensions
         SDL_Rect moveRect;
-        boardptr->GetBorderedRectFromPosition(moveRect, move.position);
+        boardptr->GetBorderedRectFromPosition(moveRect, move.GetPosition());
 
         // test if mouse click is inside the rect
         if (mouse.UnheldClick(moveRect)) {
@@ -75,15 +75,19 @@ bool SelectedPiece::MadeMove(std::vector<Piece*>* _teamptr) {
     // create ACN movestr from the move
     Piece_Info* pInfo = selectedPiece->GetPieceInfoPtr();
     lastMove = "";
-    if (selectedMove->capture || selectedPiece->GetPieceInfoPtr()->name != "Pawn") lastMove = pInfo->pieceID;
+    if (selectedMove->GetTarget() != nullptr || selectedPiece->GetPieceInfoPtr()->name != "Pawn") lastMove = pInfo->pieceID;
 
     // if two of the same pieces could have moved to the position, add col/row id:
     if (std::any_of(teamptr->begin(), teamptr->end(), [&](Piece* piece){
         if (piece == selectedPiece) return false;
         if (piece->GetPieceInfoPtr()->name != selectedPiece->GetPieceInfoPtr()->name) return false;
 
+        Position<char, int> avmovPos {}, selmovPos {};
+        selectedMove->GetPosition(&selmovPos);
         for (auto move : *piece->GetAvailableMovesPtr()) {
-            if (move.position.x == selectedMove->position.x && move.position.y == selectedMove->position.y) {
+            move.GetPosition(&avmovPos);
+
+            if (avmovPos.x == selmovPos.x && avmovPos.y == selmovPos.y) {
                 printf("piece: %s", piece->GetPieceInfoPtr()->name.c_str());
                 return true;
             }
@@ -105,15 +109,15 @@ bool SelectedPiece::MadeMove(std::vector<Piece*>* _teamptr) {
     };
 
 
-    if (selectedMove->capture) lastMove += "x";
-    lastMove += selectedMove->position.x + std::to_string(selectedMove->position.y);
+    if (selectedMove->GetTarget() != nullptr) lastMove += "x";
+    lastMove += selectedMove->GetPosition().x + std::to_string(selectedMove->GetPosition().y);
 
     // move selected piece
-    selectedPiece->MoveTo(selectedMove->position, *boardptr);
+    selectedPiece->MoveTo(selectedMove->GetPosition(), *boardptr);
     selectedPiece->ClearMoves();
 
     //if move is to capture a target, mark target as captured
-    if (selectedMove->capture) selectedMove->target->Captured();
+    if (selectedMove->GetTarget() != nullptr) selectedMove->GetTarget()->Captured(true);
 
     // unselect selected piece
     selectedPiece->UnselectPiece();

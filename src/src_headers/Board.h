@@ -72,7 +72,6 @@ class Board{
             _w = T(tileWidth);
             _h = T(tileHeight);
         }
-
         template<class T>
         void GetMinDimensions(T& _w, T& _h) const {
             _w = T(minBoardSize + minInfoWidth + minMenuWidth);
