@@ -1,7 +1,6 @@
 cmake-build-debug/
 CMakeLists.txt
 
-TestingClips/
 Temp/
 stockfish/
 GameData/
