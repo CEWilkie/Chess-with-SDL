@@ -149,9 +149,13 @@ void Board::DisplayGameBoard() {
     SDL_RenderCopy(window.renderer, boardBases[1], nullptr, &gameInfoRect);
 }
 
-void Board::GetTileRowsColumns(int &_rows, int &_cols) {
+void Board::GetRowsColumns(int &_rows, int &_cols) {
     _rows = rows;
     _cols = columns;
+}
+
+Pair<int> Board::GetRowsColumns() {
+    return {rows, columns};
 }
 
 void Board::GetBoardBLPosition(int& x, int& y) const {
@@ -189,25 +193,136 @@ void Board::GetBorderedRectFromPosition(SDL_Rect &rect, Position<char, int> posi
     rect.y += int((float)tileHeight*tile_borderHeight);
 }
 
-bool Board::CreateTempGameFile() {
+bool Board::GameDataDirectoryExists() {
+    /*
+     * Check to ensure that the directory to house GameData (path specified by string gameDataDirPath) exists.
+     * If not, create the directory. If this fails, return false.
+     */
+
+    // Check to ensure dir housing GameData exists
+    if (!std::filesystem::exists(gameDataDirPath)) {
+        printf("no GameData dir found, creating.\n");
+        if (!std::filesystem::create_directory(gameDataDirPath)) {
+            printf("failed to create GameData dir, returning false.");
+            return false;
+        }
+    }
+
+    // directory exists
+    return true;
+}
+
+void Board::ClearExcessGameFiles() {
+    /*
+     * Removes excess game data files. Excess files when > 10 files. Oldest dated files removed first. Files with
+     * unreadable date names are destroyed first under assumption that they are of old unsupported format / processes.
+     */
+
+    std::vector<AsymPair<std::string, time_t>> pathTimes;
+
+    // Fetch all contents of GameData dir and convert paths to fileTimes in list
+    for (const auto& gameData : std::filesystem::directory_iterator("../GameData")) {
+        AsymPair<std::string, time_t> pathTime;
+        std::string pathTimeString;
+        tm tm {};
+
+        pathTime.a = gameData.path().string();
+
+        // now get timeString by removing the path to the folder + copy value
+        //remove folder path string leaving just date + copy
+        pathTimeString = pathTime.a.substr(gameDataDirPath.length()+1, std::string::npos);
+
+        // ensure folder name is long enough to house the full time string
+        if (pathTimeString.length() >= timeStringFormat.size() - 1) {
+            pathTimeString.erase(timeStringFormat.size() -1, std::string::npos);
+
+            // now turn into tm, >> is highlighted as an error yet works???
+            std::istringstream ss(pathTimeString);
+            ss >> std::get_time(&tm, timeFormat.c_str());
+
+            // turn into time_t which can be stored then compared
+            pathTime.b = mktime(&tm);
+
+        } else {
+            // default to time 0
+            pathTime.b = 0;
+        }
+
+
+
+        pathTimes.push_back(pathTime);
+    }
+
+    // sort by time oldest -> newest
+    std::sort(pathTimes.begin(), pathTimes.end(), [&](const AsymPair<std::string, time_t>& pathTimeA, const AsymPair<std::string, time_t>& pathTimeB){
+        return (pathTimeA.b < pathTimeB.b);
+    });
+
+    // remove folders
+    uintmax_t nRemoved = 0; // removed count
+    for (auto pt = pathTimes.begin(); pt < pathTimes.end();) {
+        if (pathTimes.size() > 10) {
+            nRemoved += std::filesystem::remove_all(pt->a);
+
+            pt = pathTimes.erase(pt);
+            continue;
+        }
+        pt++;
+    }
+
+    printf("Removed %ju files/Directories", nRemoved);
+
+    for (auto pt : pathTimes) {
+        printf("%lld\n", pt.b);
+    }
+
+    // remove until only 10 remain
+}
+
+bool Board::CreateGameFiles() {
+    /*
+     * Create files to store the game data for the game about to be played. This includes starting positions of pieces,
+     * and the movelist in ACN.
+     */
+
+    // Path string for the game data folder in GameData dir
+    std::string gameDirPath = gameDataDirPath + "/";
+
     // Get date:
-    char timeChar[sizeof("yyyy-mm-ddThh:mm:ssZ")];
+    char timeChar[timeStringFormat.size()];
     time_t t = time(nullptr);
-    std::strftime(timeChar, sizeof(timeChar), "%H_%M_%S_%d_%m_%Y", localtime(&t));
-    std::string timeString = timeChar;
+    std::strftime(timeChar, sizeof(timeChar), "%d_%m_%Y_%H_%M_%S", localtime(&t));
+    printf("Time : %s", timeChar);
+    gameDirPath += timeChar;
 
-    std::string dirName = "Game_" + timeString;
-    moveListFile = "../Temp/" + dirName + "_ACNmovelist.txt";
+    // Check to ensure dir using date (and/or copy number) doesn't already exist. If does exist, keep adding 1 to
+    // dupe indicator on end until unique name.
+    std::string gameDirPathDupe = gameDirPath;
+    int dupeIndicator = 1;
+    while (std::filesystem::exists(gameDirPathDupe)) {
+        gameDirPathDupe = gameDirPath + "_" + std::to_string(dupeIndicator);
+        dupeIndicator += 1;
+    }
+    gameDirPath = gameDirPathDupe;
 
-    std::ofstream file(moveListFile.c_str());
+    // Create dir for game data using path
+    if (!std::filesystem::create_directory(gameDirPath)) {
+        printf("failed to create GameData_Time_Copy dir, returning false.");
+        return false;
+    }
+
+    // Create file to house ACN of game moves
+    moveListFilePath = gameDirPath + "/ACNmovelist.txt";
+    std::ofstream file(moveListFilePath);
     if (!file.good()) {
         file.close();
         return false;
     }
     file.close();
 
-    startPosFile = "../Temp/" + dirName + "_ACNstartpos.csv";
-    file.open(startPosFile.c_str());
+    // Create file to house ACN of piece start positions
+    startPosFilePath = gameDirPath + "/ACNstartpos.csv";
+    file.open(startPosFilePath);
     if (!file.good()) {
         file.close();
         return false;
@@ -218,7 +333,7 @@ bool Board::CreateTempGameFile() {
 }
 
 bool Board::WriteStartPositionsToFile(const std::vector<Piece *> &_allPieces) {
-    std::fstream spFile(startPosFile.c_str());
+    std::fstream spFile(startPosFilePath.c_str());
     if (!spFile.good()) {
         spFile.close();
         return false;
@@ -235,7 +350,7 @@ bool Board::WriteStartPositionsToFile(const std::vector<Piece *> &_allPieces) {
 }
 
 bool Board::WriteMoveToFile(const std::string& _move) {
-    std::fstream mlFile(moveListFile.c_str(), std::ios::app);
+    std::fstream mlFile(moveListFilePath.c_str(), std::ios::app);
     if (!mlFile.good()) {
         mlFile.close();
         return false;

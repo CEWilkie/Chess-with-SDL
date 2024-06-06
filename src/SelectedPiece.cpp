@@ -109,7 +109,7 @@ bool SelectedPiece::MadeMove(std::vector<Piece*>* _teamptr) {
     };
 
 
-    if (selectedMove->GetTarget() != nullptr) lastMove += "x";
+    if (selectedMove->GetTarget() != nullptr) lastMove += "a";
     lastMove += selectedMove->GetPosition().x + std::to_string(selectedMove->GetPosition().y);
 
     // move selected piece
@@ -119,7 +119,7 @@ bool SelectedPiece::MadeMove(std::vector<Piece*>* _teamptr) {
     //if move is to capture a target, mark target as captured
     if (selectedMove->GetTarget() != nullptr) selectedMove->GetTarget()->Captured(true);
 
-    // unselect selected piece
+    // unselect selected piece and set to lastmoved Piece
     selectedPiece->UnselectPiece();
     selectedPiece = nullptr;
     return true;

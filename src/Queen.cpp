@@ -23,7 +23,7 @@ void Queen::FetchMoves(const std::vector<Piece *> &_teamPieces, const std::vecto
 
     // delta rows or change in rows. increments by +-1 to move in diagonals
     int maxRows, maxCols, dr, dc;
-    Board::GetTileRowsColumns(maxRows, maxCols);
+    Board::GetRowsColumns(maxRows, maxCols);
 
     // repeat 4 times for each of the diagonal directions (order T -> R -> B -> L)
     for (int direction = 0; direction < 4; direction++) {

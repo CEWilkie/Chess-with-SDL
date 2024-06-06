@@ -13,12 +13,12 @@ void Knight::FetchMoves(const std::vector<Piece *> &_teamPieces, const std::vect
                         const Board &_board) {
     /*
      * Fetches the moves for
-     *  [_][x][_][x][_]
-     *  [x][_][_][_][x]
+     *  [_][a][_][a][_]
+     *  [a][_][_][_][a]
      *  [_][_][K][_][_]
-     *  [x][_][_][_][x]
-     *  [_][x][_][x][_]
-     *  where x marks an empty tile or capturable piece
+     *  [a][_][_][_][a]
+     *  [_][a][_][a][_]
+     *  where a marks an empty tile or capturable piece
      */
 
     // only fetch moves if the moves have not been updated, and whilst piece is not captured

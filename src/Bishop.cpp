@@ -25,7 +25,7 @@ void Bishop::FetchMoves(const std::vector<Piece *> &_teamPieces, const std::vect
 
     // delta rows or change in rows. increments by +-1 to move in diagonals
     int maxRows, maxCols, dr = 0, dc = 0;
-    Board::GetTileRowsColumns(maxRows, maxCols);
+    Board::GetRowsColumns(maxRows, maxCols);
 
     // repeat 4 times for each of the diagonal directions (order RT -> RB -> LB -> LT)
     for (int direction = 0; direction < 4; direction++) {

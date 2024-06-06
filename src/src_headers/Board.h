@@ -10,7 +10,9 @@
 #include <vector>
 #include <string>
 #include <fstream>
+#include <sstream>
 #include <chrono>
+#include <filesystem>
 #include "GlobalSource.h"
 #include "Piece.h"
 
@@ -56,8 +58,11 @@ class Board{
         SDL_Surface* surface{};
 
         // Gameplay recording vars
-        std::string moveListFile;
-        std::string startPosFile;
+        std::string gameDataDirPath = "../GameData";
+        std::string moveListFilePath;
+        std::string startPosFilePath;
+        std::string timeFormat = "%d_%m_%Y_%H_%M_%S";
+        std::string timeStringFormat = "dd_mm_yyyyThh:mm:ssZ";
         int numEots = 0;
         int turn = 1;
 
@@ -78,7 +83,8 @@ class Board{
             _h = T(minBoardSize);
         }
 
-        static void GetTileRowsColumns(int& _rows, int& _cols) ;
+        static void GetRowsColumns(int& _rows, int& _cols);
+        static Pair<int> GetRowsColumns() ;
         void GetBoardBLPosition(int& x, int& y) const;
         void GetTileRectFromPosition(SDL_Rect& rect, Position<char, int> position) const;
         void GetBorderedRectFromPosition(SDL_Rect &rect, Position<char, int> position) const;
@@ -86,7 +92,9 @@ class Board{
         // Setters
 
         // Gameplay Recording
-        bool CreateTempGameFile();
+        bool GameDataDirectoryExists();
+        void ClearExcessGameFiles();
+        bool CreateGameFiles();
         bool WriteStartPositionsToFile(const std::vector<Piece*> &_allPieces);
         bool WriteMoveToFile(const std::string& _move);
         void IncrementTurn();

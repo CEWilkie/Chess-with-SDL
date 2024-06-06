@@ -22,7 +22,7 @@ int EnsureWindowSize(Board* _board) {
     // Fetch rect of current window properties
     SDL_Rect rect_current = {0, 0};
     SDL_GetWindowSize(window.window, &rect_current.w, &rect_current.h);
-    //SDL_GetWindowPosition(Window.window, &rect_current.x, &rect_current.y);
+    //SDL_GetWindowPosition(Window.window, &rect_current.a, &rect_current.b);
 
     // fetch min size boundaries
     int minW, minH;
@@ -103,11 +103,17 @@ int main(int argc, char** argv) {
      *  CONSTRUCT GAME ELEMENTS
      */
 
-
     // Construct Board
     Board board;
     board.CreateBoardTexture();
-    board.CreateTempGameFile();
+
+    // Ensure GameData directory exists else end program
+    if (!board.GameDataDirectoryExists()) {
+        return 0;
+    }
+    board.ClearExcessGameFiles();
+    // Create game data files in dir
+    board.CreateGameFiles();
 
     /*
      * CONSTRUCT WHITE PIECES
@@ -141,16 +147,16 @@ int main(int argc, char** argv) {
             newPiece = new Knight("Knight", pieceElements[0], {(char)pieceElements[2][0], std::stoi(pieceElements[3])});
         }
         if (pieceElements[1] == "Bishop") {
-            newPiece = new Bishop("Knight", pieceElements[0], {(char)pieceElements[2][0], std::stoi(pieceElements[3])});
+            newPiece = new Bishop("Bishop", pieceElements[0], {(char)pieceElements[2][0], std::stoi(pieceElements[3])});
         }
         if (pieceElements[1] == "Rook") {
-            newPiece = new Rook("Knight", pieceElements[0], {(char)pieceElements[2][0], std::stoi(pieceElements[3])});
+            newPiece = new Rook("Rook", pieceElements[0], {(char)pieceElements[2][0], std::stoi(pieceElements[3])});
         }
         if (pieceElements[1] == "King") {
-            newPiece = new King("Knight", pieceElements[0], {(char)pieceElements[2][0], std::stoi(pieceElements[3])});
+            newPiece = new King("King", pieceElements[0], {(char)pieceElements[2][0], std::stoi(pieceElements[3])});
         }
         if (pieceElements[1] == "Queen") {
-            newPiece = new Queen("Knight", pieceElements[0], {(char)pieceElements[2][0], std::stoi(pieceElements[3])});
+            newPiece = new Queen("Queen", pieceElements[0], {(char)pieceElements[2][0], std::stoi(pieceElements[3])});
         }
 
         if (newPiece != nullptr) {
@@ -172,8 +178,8 @@ int main(int argc, char** argv) {
      * CONSTRUCT ADDITIONAL
      */
 
-    auto* teamptr = &white_pieces;
-    auto* oppptr = &black_pieces;
+    auto teamptr = &white_pieces;
+    auto oppptr = &black_pieces;
     SelectedPiece selectedPiece(teamptr, oppptr, &board);
 
     bool running = true;
@@ -255,6 +261,15 @@ int main(int argc, char** argv) {
         /*
          *  END OF TURN MANAGEMENT
          */
+
+        // Do promotion of pawn on end tile
+        if (eot) {
+            for (auto piece : *teamptr) {
+                if (piece->ReadyToPromote()) {
+                    printf("%c can promote", piece->GetPieceInfoPtr()->gamepos.x);
+                }
+            }
+        }
 
         if (eot) {
             // remove moves from this turn

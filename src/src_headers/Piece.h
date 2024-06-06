@@ -62,7 +62,7 @@ class Piece {
         Piece_Info* info {};
 
         // SDL display
-        std::string imgName {};
+        std::string imgPath {};
         SDL_Texture* pieceTexture {};
         SDL_Texture* moveHighlights[3] {};
         SDL_Rect pieceRect {};
@@ -108,6 +108,7 @@ class Piece {
         void TempMoveTo(AvailableMove* _tempmove);
         void UnMove(AvailableMove* _tempmove);
         void Captured(bool captured = true);
+        bool ReadyToPromote();
 
         void DisplayMoves(const Board& board);
         bool CheckClicked();

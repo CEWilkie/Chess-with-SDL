@@ -7,6 +7,8 @@
 
 #include <iostream>
 #include <cmath>
+#include <chrono>
+#include <ctime>
 #include <SDL.h>
 
 template<class T>
@@ -14,6 +16,18 @@ void LogError(const std::string& errorMsgDecorative = "", const T& errorMsg = ""
     printf("New Error Raised!\nError Desc: %s\nError Proper: %s\nError Fatal?  %d\n",
            errorMsgDecorative.c_str(), errorMsg, fatal);
 }
+
+template<class A>
+struct Pair{
+        A a;
+        A b;
+    };
+
+template<class A, class B>
+struct AsymPair{
+            A a;
+            B b;
+        };
 
 template<class A, class B>
 struct Position{

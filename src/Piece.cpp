@@ -10,16 +10,19 @@ Piece::Piece(const std::string& _name, const std::string& _color, Position<char,
 
     // Set path to png file of piece
     // Eg: Knight_White.png. the relevant image files are named as such.
-    imgName = "../Resources/" + info->name + "/" + info->name + "_" + info->color + ".png";
+    imgPath = "../Resources/" + info->name + "/" + info->name + "_" + info->color + ".png";
 
     // Create Texture of Piece
-    pieceTexture = IMG_LoadTexture(window.renderer, imgName.c_str());
+    pieceTexture = IMG_LoadTexture(window.renderer, imgPath.c_str());
 
     // Set initial game board position
     info->gamepos = _gamepos;
 
     // If white, move up board. If black, move down board. This is only necessary for pawns
     dir = (info->colID == 'W') ? 1 : -1;
+
+    // If pawn, canPromote is true
+    canPromote = (info->name == "Pawn");
 }
 
 int Piece::CreateTextures() {
@@ -36,7 +39,7 @@ int Piece::CreateTextures() {
         return -1;
     }
 
-    if ((pieceTexture = IMG_LoadTexture(window.renderer, imgName.c_str())) == nullptr) {
+    if ((pieceTexture = IMG_LoadTexture(window.renderer, imgPath.c_str())) == nullptr) {
         LogError("Failed to create piece pieceTexture", SDL_GetError(), false);
         return -1;
     }
@@ -199,13 +202,13 @@ bool Piece::MoveLeadsToCheck(const std::vector<Piece *> &_teamPieces, const std:
 void Piece::EnforceBorderOnMoves() {
     // Removes any moves from the valid moves list that go past the border.
     int rows, cols;
-    Board::GetTileRowsColumns(rows, cols);
+    Board::GetRowsColumns(rows, cols);
 
     for (auto iter = validMoves.begin(); iter != validMoves.end();)  {
         Position<char, int> movPos {};
         iter->GetPosition(&movPos);
 
-        // check if move exceeds y positions then check x positions
+        // check if move exceeds b positions then check a positions
         if ((movPos.y < 1 || movPos.y > rows) ||  (movPos.x < 'a' || movPos.x > char('a' + cols - 1))){
             iter = validMoves.erase(iter);
         }
@@ -249,6 +252,12 @@ void Piece::PreventMoveIntoCheck(const std::vector<Piece *> &_teamPieces, const 
 
 
     updatedNextMoves = true;
+}
+
+bool Piece::ReadyToPromote() {
+    // Determine if piece at end of column
+    int eoc = (info->colID == 'W') ? Board::GetRowsColumns().a : 1;
+    return (canPromote && info->gamepos.y == eoc);
 }
 
 void Piece::ClearMoves() {

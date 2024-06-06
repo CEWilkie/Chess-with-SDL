@@ -14,9 +14,9 @@ void King::FetchMoves(const std::vector<Piece *> &_teamPieces, const std::vector
     /*
      * King moves are in the 8 tiles surrounding him
      * [_][_][_][_][_]
-     * [_][x][x][x][_]
-     * [_][x][K][x][_]
-     * [_][x][x][x][_]
+     * [_][a][a][a][_]
+     * [_][a][K][a][_]
+     * [_][a][a][a][_]
      * [_][_][_][_][_]
      * However, he cannot enter a position where he is being checked (targeted by another piece)
      */
