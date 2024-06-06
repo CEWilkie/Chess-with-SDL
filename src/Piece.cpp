@@ -257,7 +257,7 @@ void Piece::PreventMoveIntoCheck(const std::vector<Piece *> &_teamPieces, const 
 bool Piece::ReadyToPromote() {
     // Determine if piece at end of column
     int eoc = (info->colID == 'W') ? Board::GetRowsColumns().a : 1;
-    return (canPromote && info->gamepos.y == eoc);
+    return (canPromote && info->gamepos.y == eoc && !captured);
 }
 
 void Piece::ClearMoves() {
@@ -324,6 +324,8 @@ void Piece::DisplayMoves(const Board& board) {
 }
 
 bool Piece::CheckClicked() {
+    if (captured) return false;
+
     return  mouse.UnheldClick(boardposRect);
 }
 

@@ -113,11 +113,15 @@ int main(int argc, char** argv) {
     }
     board.ClearExcessGameFiles();
     // Create game data files in dir
-    board.CreateGameFiles();
+    if (!board.CreateGameFiles()) {
+        printf("Error creating game files.\n");
+        return 0;
+    }
 
     /*
      * CONSTRUCT WHITE PIECES
      */
+
     std::vector<Piece*> all_pieces;
     std::vector<Piece*> white_pieces;
     std::vector<Piece*> black_pieces;
@@ -206,6 +210,29 @@ int main(int argc, char** argv) {
         }
 
         /*
+         * CHECKMATE + STALEMATE CHECKING
+         * this is done after moves are fetched and confirmed
+         */
+
+        // Check if team pieces have any available moves
+        bool canMove = std::any_of(teamptr->begin(), teamptr->end(), [](Piece *piece) {
+            return !piece->GetAvailableMovesPtr()->empty();
+        });
+
+        // if there are no moves available, check if King is being checked by opp
+        if (!canMove && std::any_of(oppptr->begin(), oppptr->end(), [](Piece *piece) {
+            return piece->IsCheckingKing();
+        })) {
+            // conditions met: checkmate
+            printf("CHECKMATE! 1:0");
+            running = false;
+        } else if (!canMove) {
+            // conditions met: stalemate
+            printf("STALEMATE! 0.5:0.5");
+            running = false;
+        }
+
+        /*
          *  FETCH USER INPUT FROM EVENTS
          */
 
@@ -236,37 +263,45 @@ int main(int argc, char** argv) {
         if (!eot) selectedPiece.CheckForClicked(teamptr);
 
         /*
-         * CHECKMATE + STALEMATE CHECKING
-         */
-
-
-        // Check if team pieces have any available moves
-        bool canMove = std::any_of(teamptr->begin(), teamptr->end(), [](Piece* piece) {
-            return !piece->GetAvailableMovesPtr()->empty();
-        });
-
-        // if there are no moves available, check if King is being checked by opp
-        if (!canMove && std::any_of(oppptr->begin(), oppptr->end(), [](Piece* piece){
-            return piece->IsCheckingKing();
-        })) {
-            // conditions met: checkmate
-            printf("CHECKMATE! 1:0");
-            running = false;
-        } else if (!canMove) {
-            // conditions met: stalemate
-            printf("STALEMATE! 0.5:0.5");
-            running = false;
-        }
-
-        /*
          *  END OF TURN MANAGEMENT
          */
 
-        // Do promotion of pawn on end tile
+        // Do promotion if pawn has reached the end tile
         if (eot) {
             for (auto piece : *teamptr) {
                 if (piece->ReadyToPromote()) {
-                    printf("%c can promote", piece->GetPieceInfoPtr()->gamepos.x);
+                    // remove piece from board
+                    piece->Captured();
+
+                    // fetch input
+                    std::string promoteInput;
+                    printf("%c pawn can promote\n", piece->GetPieceInfoPtr()->gamepos.x);
+                    printf("What will you promote to? Q R N B : ");
+                    std::getline(std::cin, promoteInput);
+
+                    // Create new piece on position
+                    Position<char, int> position = piece->GetPieceInfoPtr()->gamepos;
+                    Piece* promotedPiece;
+                    if (promoteInput == "N") {
+                        promotedPiece = new Knight("Knight", piece->GetPieceInfoPtr()->color, position);
+                    }
+                    else if (promoteInput == "B") {
+                        promotedPiece = new Bishop("Bishop", piece->GetPieceInfoPtr()->color, position);
+                    }
+                    else if (promoteInput == "R") {
+                        promotedPiece = new Rook("Rook", piece->GetPieceInfoPtr()->color, position);
+                    }
+                    else {
+                        promotedPiece = new Queen("Queen", piece->GetPieceInfoPtr()->color, position);
+                    }
+
+                    // Set up piece texture
+                    promotedPiece->CreateTextures();
+                    promotedPiece->GetRectOfBoardPosition(board);
+
+                    // add to piece lists
+                    teamptr->push_back(promotedPiece);
+                    all_pieces.push_back(promotedPiece);
                 }
             }
         }

@@ -221,7 +221,7 @@ void Board::ClearExcessGameFiles() {
     std::vector<AsymPair<std::string, time_t>> pathTimes;
 
     // Fetch all contents of GameData dir and convert paths to fileTimes in list
-    for (const auto& gameData : std::filesystem::directory_iterator("../GameData")) {
+    for (const auto& gameData : std::filesystem::directory_iterator(gameDataDirPath)) {
         AsymPair<std::string, time_t> pathTime;
         std::string pathTimeString;
         tm tm {};
@@ -248,8 +248,6 @@ void Board::ClearExcessGameFiles() {
             pathTime.b = 0;
         }
 
-
-
         pathTimes.push_back(pathTime);
     }
 
@@ -270,13 +268,7 @@ void Board::ClearExcessGameFiles() {
         pt++;
     }
 
-    printf("Removed %ju files/Directories", nRemoved);
-
-    for (auto pt : pathTimes) {
-        printf("%lld\n", pt.b);
-    }
-
-    // remove until only 10 remain
+    printf("Removed %ju files/Directories\n", nRemoved);
 }
 
 bool Board::CreateGameFiles() {
@@ -291,7 +283,7 @@ bool Board::CreateGameFiles() {
     // Get date:
     char timeChar[timeStringFormat.size()];
     time_t t = time(nullptr);
-    std::strftime(timeChar, sizeof(timeChar), "%d_%m_%Y_%H_%M_%S", localtime(&t));
+    std::strftime(timeChar, sizeof(timeChar), timeFormat.c_str(), localtime(&t));
     printf("Time : %s", timeChar);
     gameDirPath += timeChar;
 
