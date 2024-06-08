@@ -47,9 +47,83 @@ void King::FetchMoves(const std::vector<Piece *> &_teamPieces, const std::vector
         }
     }
 
+    /*
+     * Castling:
+     * must be no obstructions between king and rook
+     * no spaces travelled by the king may be under check by opponent
+     * moves two spaces, and move the rook to the opposite side of the King.
+     */
+
+    // construct castling move
+    AvailableMove castleKS {}, castleQS;
+    castleKS.SetPosition({char(info->gamepos.x + 2), info->gamepos.y});
+    castleQS.SetPosition({char(info->gamepos.x - 2), info->gamepos.y});
+    canCastleKingside = !hasMoved;
+    canCastleQueenside = !hasMoved;
+
+    // checking that no space is checked or occupied
+    for (int dx = -2; dx < 3; dx++){
+        for (auto piece: _oppPieces) {
+            if (piece->IsTargetingPosition({char(info->gamepos.x + dx), info->gamepos.y})) {
+                // piece is targeting one of the spaces, cannot currently castle
+                (dx < 0) ? canCastleQueenside = false : canCastleKingside = false;
+            }
+        }
+
+        if (GetPieceOnPosition(_teamPieces, _oppPieces, {char(info->gamepos.x + dx), info->gamepos.y}) != nullptr) {
+            // Piece is on the position, cannot castle
+            (dx < 0) ? canCastleQueenside = false : canCastleKingside = false;
+        }
+
+        // skip over dx = 0, as dx++ occurs right after this
+        if (dx == -1) dx = 0;
+    }
+
+    // test the closest first rook on the Kingside for captured / moved
+    if (canCastleKingside){
+        for (char dx = info->gamepos.x; dx < 'i'; dx++) {
+            auto piece = GetTeamPieceOnPosition(_teamPieces, {dx, info->gamepos.y});
+            if (piece == nullptr) continue;
+
+            // test rook
+            auto pi = piece->GetPieceInfoPtr();
+            if (pi->pieceID == 'R') {
+                if (!piece->HasMoved() && !piece->IsCaptured()) {
+                    // set the rook as the target for the move and add to moves list
+                    castleKS.SetTarget(piece);
+                    validMoves.push_back(castleKS);
+                    break;
+                }
+            }
+        }
+    }
+
+    // test the closest first rook on the Queenside for captured / moved
+    if (canCastleQueenside) {
+        for (char dx = info->gamepos.x; dx >= 'a'; dx--) {
+            auto piece = GetTeamPieceOnPosition(_teamPieces, {dx, info->gamepos.y});
+            if (piece == nullptr) continue;
+
+            // test rook
+            auto pi = piece->GetPieceInfoPtr();
+            if (pi->pieceID == 'R') {
+                if (!piece->HasMoved() && !piece->IsCaptured()) {
+                    // set the rook as the target for the move and add to moves list
+                    castleQS.SetTarget(piece);
+                    validMoves.push_back(castleQS);
+                    break;
+                }
+            }
+        }
+    }
+
     EnforceBorderOnMoves();
-
-    // now test for checks on move made
-
     updatedMoves = true;
+}
+
+void King::UpdateCheckerVars() {
+    if (hasMoved) {
+        canCastleKingside = false;
+        canCastleQueenside = false;
+    }
 }

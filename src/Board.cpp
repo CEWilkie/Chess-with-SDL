@@ -284,7 +284,7 @@ bool Board::CreateGameFiles() {
     char timeChar[timeStringFormat.size()];
     time_t t = time(nullptr);
     std::strftime(timeChar, sizeof(timeChar), timeFormat.c_str(), localtime(&t));
-    printf("Time : %s", timeChar);
+    printf("Date_Time : %s\n", timeChar);
     gameDirPath += timeChar;
 
     // Check to ensure dir using date (and/or copy number) doesn't already exist. If does exist, keep adding 1 to

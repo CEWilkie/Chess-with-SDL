@@ -255,7 +255,7 @@ int main(int argc, char** argv) {
          */
 
         // check if user has made a move
-        if (selectedPiece.MadeMove(oppptr)) {
+        if (selectedPiece.MadeMove(oppptr, board)) {
             eot = true;
         }
 

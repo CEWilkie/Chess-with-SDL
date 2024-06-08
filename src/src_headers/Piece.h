@@ -74,7 +74,6 @@ class Piece {
         bool canPassant = false;
         int passantTimer = 0;
         bool canPromote = false;
-
         int dir = 1;
 
         // user input detection
@@ -100,7 +99,7 @@ class Piece {
         virtual void UpdateCheckerVars();
         void ClearMoves();
         void ClearNextMoves();
-        bool IsTargetingPiece(Piece* _targetPiece, std::vector<AvailableMove>* _moveList = nullptr);
+        bool IsTargetingPosition(Position<char, int> _targetPosition);
         bool IsCheckingKing();
 
         // Making move
@@ -118,6 +117,8 @@ class Piece {
         // Getters
         Piece_Info* GetPieceInfoPtr() { return info; };
         std::vector<AvailableMove>* GetAvailableMovesPtr() { return &validMoves; };
+        bool HasMoved() { return hasMoved; };
+        bool IsCaptured() { return captured; };
 
         // Setters
 };

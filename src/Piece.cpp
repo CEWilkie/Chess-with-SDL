@@ -269,27 +269,12 @@ void Piece::ClearNextMoves() {
     updatedNextMoves = false;
 }
 
-bool Piece::IsTargetingPiece(Piece *_targetPiece, std::vector<AvailableMove>* _moveList) {
-    if (_targetPiece == nullptr) {
-        printf("Target nullptr\n");
-        return false;
-    }
+bool Piece::IsTargetingPosition(Position<char, int> _targetPosition) {
+    // checks if any of the pieces moves are targeting the specified position _targetPosition
 
-    // nullptr for _moveList defaults to validMoves of Piece
-    _moveList = (_moveList == nullptr) ? &validMoves : _moveList;
-
-    for (auto move : *_moveList) {
-        if (move.GetTarget() == nullptr) continue;
-
-        Piece* actualTarget;
-        move.GetTarget(actualTarget);
-
-        if (actualTarget->info->gamepos.x == _targetPiece->info->gamepos.x && actualTarget->info->gamepos.y == _targetPiece->info->gamepos.y) {
-            if (_targetPiece->info->pieceID == actualTarget->info->pieceID) return true;
-        }
-    }
-
-    return false;
+    return std::any_of(validMoves.begin(), validMoves.end(), [&](AvailableMove move){
+        return (move.GetPosition().x == _targetPosition.x && move.GetPosition().y == _targetPosition.y);
+    });
 }
 
 bool Piece::IsCheckingKing() {
@@ -318,7 +303,12 @@ void Piece::DisplayMoves(const Board& board) {
         SDL_Rect moveRect = {0, 0};
         board.GetBorderedRectFromPosition(moveRect, move.GetPosition());
 
-        int texture_index = (move.GetTarget() == nullptr) ? 1 : 2;
+        // if the move is a capture (except if capturing same team rook as this is a castling move) then use diff icon
+        int texture_index = 1;
+        if (move.GetTarget() != nullptr) {
+            if (move.GetTarget()->GetPieceInfoPtr()->colID != info->colID) texture_index = 2;
+        }
+
         SDL_RenderCopy(window.renderer, moveHighlights[texture_index], nullptr, &moveRect);
     }
 }

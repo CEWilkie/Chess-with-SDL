@@ -47,7 +47,7 @@ void SelectedPiece::ChangeSelectedPiece(Piece *_newSelected) {
     }
 }
 
-bool SelectedPiece::MadeMove(std::vector<Piece*>* _teamptr) {
+bool SelectedPiece::MadeMove(std::vector<Piece*>* _teamptr, const Board &_board) {
     if (selectedPiece == nullptr) return false;
 
     auto movesList =  *selectedPiece->GetAvailableMovesPtr();
@@ -116,8 +116,23 @@ bool SelectedPiece::MadeMove(std::vector<Piece*>* _teamptr) {
     selectedPiece->MoveTo(selectedMove->GetPosition(), *boardptr);
     selectedPiece->ClearMoves();
 
-    //if move is to capture a target, mark target as captured
-    if (selectedMove->GetTarget() != nullptr) selectedMove->GetTarget()->Captured(true);
+
+    // Castling moves and Capturing moves both have a target piece to handle
+    auto target = selectedMove->GetTarget();
+    if (target != nullptr) {
+        // if the move target is on the same team, then its a castling move
+        if (target->GetPieceInfoPtr()->colID == selectedPiece->GetPieceInfoPtr()->colID) {
+            auto pi = selectedPiece->GetPieceInfoPtr();
+
+            // rook must now swap to the opposite side of the king
+            int dx = (target->GetPieceInfoPtr()->gamepos.x < pi->gamepos.x) ? 1 : -1;
+            target->MoveTo({char(pi->gamepos.x + dx), pi->gamepos.y}, _board);
+        } else {
+            //move is to capture a target, mark target as captured
+            selectedMove->GetTarget()->Captured(true);
+        }
+
+    }
 
     // unselect selected piece and set to lastmoved Piece
     selectedPiece->UnselectPiece();

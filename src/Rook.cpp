@@ -69,3 +69,7 @@ void Rook::FetchMoves(const std::vector<Piece *> &_teamPieces, const std::vector
 
     updatedMoves = true;
 }
+
+void Rook::UpdateCheckerVars() {
+    if (hasMoved) canCastle = true;
+}

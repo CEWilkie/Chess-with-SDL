@@ -21,7 +21,7 @@ class SelectedPiece {
         void SwapPieceSetPointers();
         void CheckForClicked(std::vector<Piece*>* _teamptr);
         void ChangeSelectedPiece(Piece* _newSelected);
-        bool MadeMove(std::vector<Piece*>* _teamptr);
+        bool MadeMove(std::vector<Piece*>* _teamptr, const Board &_board);
         void GetMove(std::string& _move);
 };
 
