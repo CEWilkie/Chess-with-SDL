@@ -64,6 +64,12 @@ class Board{
         SDL_Rect col_label_rects[columns]{};
         SDL_Surface* surface{};
 
+        SDL_Texture* promoMenus[2] {nullptr, nullptr};
+        SDL_Texture* promoMenuBase {};
+        SDL_Rect promoMenuRect {0, 0, 200, 56};
+        std::string pieceNames[4] {"Bishop", "Knight", "Rook", "Queen"};
+        SDL_Rect promoIconRects[4] {};
+
         // Gameplay recording vars
         std::string gameDataDirPath = "../GameData";
         std::string moveListFilePath;
@@ -75,8 +81,11 @@ class Board{
 
     public:
         Board();
-        void DisplayGameBoard();
         int CreateBoardTexture();
+        void DisplayGameBoard();
+        bool CreatePromoMenuTexture();
+        void DisplayPromoMenu(Piece* _promotingPiece);
+        std::string GetPromoMenuInput();
 
         // Getters
         template<class T>

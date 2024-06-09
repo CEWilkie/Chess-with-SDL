@@ -197,6 +197,7 @@ int main(int argc, char** argv) {
 
     bool running = true;
     bool eot = false;
+    bool allTasksComplete = true;
     while (running) {
         // Clear screen
         SDL_RenderClear(window.renderer);
@@ -279,43 +280,45 @@ int main(int argc, char** argv) {
         if (eot) {
             for (auto piece : *teamptr) {
                 if (piece->ReadyToPromote()) {
-                    // remove piece from board
-                    piece->Captured();
+                    allTasksComplete = false;
 
-                    // fetch input
-                    std::string promoteInput;
-                    printf("%c pawn can promote\n", piece->GetPieceInfoPtr()->gamepos.x);
-                    printf("What will you promote to? Q R N B : ");
-                    std::getline(std::cin, promoteInput);
+                    // Fetch user input for promotion
+                    board.DisplayPromoMenu(piece);
 
-                    // Create new piece on position
-                    Position<char, int> position = piece->GetPieceInfoPtr()->gamepos;
-                    Piece* promotedPiece;
-                    if (promoteInput == "N") {
-                        promotedPiece = new Knight("Knight", piece->GetPieceInfoPtr()->color, position);
+                    Piece* promotedPiece = nullptr;
+                    std::string promoteTo = board.GetPromoMenuInput();
+                    Piece_Info* pi = piece->GetPieceInfoPtr();
+
+                    if (promoteTo == "Knight") {
+                        promotedPiece = new Knight("Knight", pi->color, pi->gamepos);
                     }
-                    else if (promoteInput == "B") {
-                        promotedPiece = new Bishop("Bishop", piece->GetPieceInfoPtr()->color, position);
+                    else if (promoteTo == "Bishop") {
+                        promotedPiece = new Bishop("Bishop", pi->color, pi->gamepos);
                     }
-                    else if (promoteInput == "R") {
-                        promotedPiece = new Rook("Rook", piece->GetPieceInfoPtr()->color, position);
+                    else if (promoteTo == "Rook") {
+                        promotedPiece = new Rook("Rook", pi->color, pi->gamepos);
                     }
-                    else {
-                        promotedPiece = new Queen("Queen", piece->GetPieceInfoPtr()->color, position);
+                    else if (promoteTo == "Queen"){
+                        promotedPiece = new Queen("Queen", pi->color, pi->gamepos);
                     }
 
-                    // Set up piece texture
-                    promotedPiece->CreateTextures();
-                    promotedPiece->GetRectOfBoardPosition(board);
+                    if (promotedPiece != nullptr) {
+                        // Piece has been made, mark pawn as captured and add new piece to teamptr
+                        piece->Captured(true);
 
-                    // add to piece lists
-                    teamptr->push_back(promotedPiece);
-                    all_pieces.push_back(promotedPiece);
+                        promotedPiece->CreateTextures();
+                        promotedPiece->GetRectOfBoardPosition(board);
+
+                        teamptr->push_back(promotedPiece);
+                        all_pieces.push_back(promotedPiece);
+
+                        allTasksComplete = true;
+                    }
                 }
             }
         }
 
-        if (eot) {
+        if (eot && allTasksComplete) {
             // remove moves from this turn
             for (auto piece : all_pieces) {
                 piece->ClearMoves();
@@ -348,6 +351,7 @@ int main(int argc, char** argv) {
         if (winSizeChanged != 0){
             // board
             board.CreateBoardTexture();
+            board.CreatePromoMenuTexture();
 
             // white pieces
             for (Piece* piece : white_pieces) {

@@ -25,7 +25,18 @@ Piece::Piece(const std::string& _name, const std::string& _color, Position<char,
     canPromote = (info->name == "Pawn");
 }
 
+/*
+ *  DISPLAY
+ */
+
+// Creating Textures
+
 int Piece::CreateTextures() {
+    /*
+     * Create the textures for move highlights, the piece model
+     */
+
+    // move highlights
     if ((moveHighlights[0] = IMG_LoadTexture(window.renderer, "../Resources/Piece/Selected_Target.png")) == nullptr) {
         LogError("Failed to create selected texture", SDL_GetError(), false);
         return -1;
@@ -39,6 +50,7 @@ int Piece::CreateTextures() {
         return -1;
     }
 
+    // Piece model
     if ((pieceTexture = IMG_LoadTexture(window.renderer, imgPath.c_str())) == nullptr) {
         LogError("Failed to create piece pieceTexture", SDL_GetError(), false);
         return -1;
@@ -51,6 +63,8 @@ void Piece::GetRectOfBoardPosition(const Board& board) {
     board.GetBorderedRectFromPosition(boardposRect, info->gamepos);
     pieceRect = boardposRect;
 }
+
+// Displaying Piece / Moves
 
 void Piece::DisplayPiece() {
     // Don't display piece if captured
@@ -72,42 +86,32 @@ void Piece::DisplayPiece() {
     SDL_RenderCopy(window.renderer, pieceTexture, nullptr, &pieceRect);
 }
 
-Piece* Piece::GetTeamPieceOnPosition(const std::vector<Piece *> &_teamPieces, Position<char, int> _targetPos) {
-    for (auto teamPiece : _teamPieces) {
-        // ignore captured pieces
-        if (teamPiece->captured) continue;
+void Piece::DisplayMoves(const Board& board) {
+    /*
+     * When the piece is selected, will display the valid moves listed in the validMoves vector
+     */
 
-        // check non-captured piece
-        if (teamPiece->info->gamepos.x == _targetPos.x && teamPiece->info->gamepos.y == _targetPos.y) {
-            return teamPiece;
+    if (!selected || captured) return;
+
+    for (AvailableMove move : validMoves) {
+        SDL_Rect moveRect = {0, 0};
+        board.GetBorderedRectFromPosition(moveRect, move.GetPosition());
+
+        // if the move is a capture (except if capturing same team rook as this is a castling move) then use diff icon
+        int texture_index = 1;
+        if (move.GetTarget() != nullptr) {
+            if (move.GetTarget()->GetPieceInfoPtr()->colID != info->colID) texture_index = 2;
         }
+
+        SDL_RenderCopy(window.renderer, moveHighlights[texture_index], nullptr, &moveRect);
     }
-
-    return nullptr;
 }
 
-Piece* Piece::GetOppPieceOnPosition(const std::vector<Piece *> &_oppPieces, Position<char, int> _targetPos) {
-    for (auto oppPiece : _oppPieces) {
-        // ignore captured pieces
-        if (oppPiece->captured) continue;
+/*
+ * FETCHING AND TESTING MOVES
+ */
 
-        // check non-captured piece
-        if (oppPiece->info->gamepos.x == _targetPos.x && oppPiece->info->gamepos.y == _targetPos.y) {
-            return oppPiece;
-        }
-    }
-
-    // no capturable pieces;
-    return nullptr;
-}
-
-Piece* Piece::GetPieceOnPosition(const std::vector<Piece *> &_teamPieces, const std::vector<Piece *> &_oppPieces, Position<char, int> _targetPos) {
-    Piece* piece = GetTeamPieceOnPosition(_teamPieces, _targetPos);
-    if (piece != nullptr) return piece;
-
-    piece = GetOppPieceOnPosition(_oppPieces, _targetPos);
-    return piece;
-}
+// Fetching and testing Moves
 
 void Piece::FetchMoves(const std::vector<Piece*> &_teamPieces, const std::vector<Piece*> &_oppPieces, const Board& _board) {
     /*
@@ -168,6 +172,25 @@ void Piece::FetchMoves(const std::vector<Piece*> &_teamPieces, const std::vector
     updatedMoves = true;
 }
 
+void Piece::EnforceBorderOnMoves() {
+    // Removes any moves from the valid moves list that go past the border.
+    int rows, cols;
+    Board::GetRowsColumns(rows, cols);
+
+    for (auto iter = validMoves.begin(); iter != validMoves.end();)  {
+        Position<char, int> movPos {};
+        iter->GetPosition(&movPos);
+
+        // check if move exceeds b positions then check a positions
+        if ((movPos.y < 1 || movPos.y > rows) ||  (movPos.x < 'a' || movPos.x > char('a' + cols - 1))){
+            iter = validMoves.erase(iter);
+        }
+        else {
+            iter++;
+        }
+    }
+}
+
 bool Piece::MoveLeadsToCheck(const std::vector<Piece *> &_teamPieces, const std::vector<Piece *> &_oppPieces,
                              const Board &_board, AvailableMove* _move, Piece* _movingPiece) {
     // store move data locally, as info at pointer can be changed and idk how to fix that
@@ -197,25 +220,6 @@ bool Piece::MoveLeadsToCheck(const std::vector<Piece *> &_teamPieces, const std:
 
     // return checking value
     return checking;
-}
-
-void Piece::EnforceBorderOnMoves() {
-    // Removes any moves from the valid moves list that go past the border.
-    int rows, cols;
-    Board::GetRowsColumns(rows, cols);
-
-    for (auto iter = validMoves.begin(); iter != validMoves.end();)  {
-        Position<char, int> movPos {};
-        iter->GetPosition(&movPos);
-
-        // check if move exceeds b positions then check a positions
-        if ((movPos.y < 1 || movPos.y > rows) ||  (movPos.x < 'a' || movPos.x > char('a' + cols - 1))){
-            iter = validMoves.erase(iter);
-        }
-        else {
-            iter++;
-        }
-    }
 }
 
 void Piece::PreventMoveIntoCheck(const std::vector<Piece *> &_teamPieces, const std::vector<Piece *> &_oppPieces, const Board &_board) {
@@ -254,11 +258,7 @@ void Piece::PreventMoveIntoCheck(const std::vector<Piece *> &_teamPieces, const 
     updatedNextMoves = true;
 }
 
-bool Piece::ReadyToPromote() {
-    // Determine if piece at end of column
-    int eoc = (info->colID == 'W') ? Board::GetRowsColumns().a : 1;
-    return (canPromote && info->gamepos.y == eoc && !captured);
-}
+// Clear Moves
 
 void Piece::ClearMoves() {
     validMoves.clear();
@@ -268,6 +268,12 @@ void Piece::ClearMoves() {
 void Piece::ClearNextMoves() {
     updatedNextMoves = false;
 }
+
+/*
+ * TARGETING INFO / POSITIONAL INFO FETCHING
+ */
+
+// Target / Targeting Status fetching
 
 bool Piece::IsTargetingPosition(Position<char, int> _targetPosition) {
     // checks if any of the pieces moves are targeting the specified position _targetPosition
@@ -287,50 +293,51 @@ bool Piece::IsCheckingKing() {
     }));
 }
 
-void Piece::UpdateCheckerVars() {
-    passantTimer -= 1;
-    canPassant = passantTimer > 0;
-}
+// Fetching piece if on a particular position
 
-void Piece::DisplayMoves(const Board& board) {
-    /*
-     * When the piece is selected, will display the valid moves listed in the validMoves vector
-     */
+Piece* Piece::GetTeamPieceOnPosition(const std::vector<Piece *> &_teamPieces, Position<char, int> _targetPos) {
+    for (auto teamPiece : _teamPieces) {
+        // ignore captured pieces
+        if (teamPiece->captured) continue;
 
-    if (!selected || captured) return;
-
-    for (AvailableMove move : validMoves) {
-        SDL_Rect moveRect = {0, 0};
-        board.GetBorderedRectFromPosition(moveRect, move.GetPosition());
-
-        // if the move is a capture (except if capturing same team rook as this is a castling move) then use diff icon
-        int texture_index = 1;
-        if (move.GetTarget() != nullptr) {
-            if (move.GetTarget()->GetPieceInfoPtr()->colID != info->colID) texture_index = 2;
+        // check non-captured piece
+        if (teamPiece->info->gamepos.x == _targetPos.x && teamPiece->info->gamepos.y == _targetPos.y) {
+            return teamPiece;
         }
-
-        SDL_RenderCopy(window.renderer, moveHighlights[texture_index], nullptr, &moveRect);
     }
+
+    return nullptr;
 }
 
-bool Piece::CheckClicked() {
-    if (captured) return false;
+Piece* Piece::GetOppPieceOnPosition(const std::vector<Piece *> &_oppPieces, Position<char, int> _targetPos) {
+    for (auto oppPiece : _oppPieces) {
+        // ignore captured pieces
+        if (oppPiece->captured) continue;
 
-    return  mouse.UnheldClick(boardposRect);
+        // check non-captured piece
+        if (oppPiece->info->gamepos.x == _targetPos.x && oppPiece->info->gamepos.y == _targetPos.y) {
+            return oppPiece;
+        }
+    }
+
+    // no capturable pieces;
+    return nullptr;
 }
 
-bool Piece::UpdateSelected() {
-    // prevent selection when captured
-    if  (captured) return false;
+Piece* Piece::GetPieceOnPosition(const std::vector<Piece *> &_teamPieces, const std::vector<Piece *> &_oppPieces, Position<char, int> _targetPos) {
+    Piece* piece = GetTeamPieceOnPosition(_teamPieces, _targetPos);
+    if (piece != nullptr) return piece;
 
-    // user clicked in region of piece, so piece is selected
-    selected = mouse.UnheldClick(boardposRect);
-    return selected;
+    piece = GetOppPieceOnPosition(_oppPieces, _targetPos);
+    return piece;
 }
 
-void Piece::UnselectPiece() {
-    selected = false;
-}
+
+/*
+ * MAKING A MOVE
+ */
+
+// Making / Testing a move
 
 void Piece::MoveTo(Position<char, int> _movepos, const Board &_board) {
     // prevent moves when captured
@@ -352,6 +359,16 @@ void Piece::MoveTo(Position<char, int> _movepos, const Board &_board) {
     GetRectOfBoardPosition(_board);
 }
 
+void Piece::UpdateCheckerVars() {
+    passantTimer -= 1;
+    canPassant = passantTimer > 0;
+}
+
+void Piece::Captured(bool _captured) {
+    // update captured value to prevent piece from being interacted with or displayed.
+    captured = _captured;
+}
+
 void Piece::TempMoveTo(AvailableMove* _tempmove) {
     info->lastpos = info->gamepos;
     info->gamepos = _tempmove->GetPosition();
@@ -371,7 +388,33 @@ void Piece::UnMove(AvailableMove* _tempmove) {
     }
 }
 
-void Piece::Captured(bool _captured) {
-    // update captured value to prevent piece from being interacted with or displayed.
-    captured = _captured;
+// Promotions
+
+bool Piece::ReadyToPromote() {
+    // Determine if piece at end of column
+    int eoc = (info->colID == 'W') ? Board::GetRowsColumns().a : 1;
+    return (canPromote && info->gamepos.y == eoc && !captured);
+}
+
+/*
+ * SELECTING PIECES
+ */
+
+bool Piece::CheckClicked() {
+    if (captured) return false;
+
+    return  mouse.UnheldClick(boardposRect);
+}
+
+bool Piece::UpdateSelected() {
+    // prevent selection when captured
+    if  (captured) return false;
+
+    // user clicked in region of piece, so piece is selected
+    selected = mouse.UnheldClick(boardposRect);
+    return selected;
+}
+
+void Piece::UnselectPiece() {
+    selected = false;
 }

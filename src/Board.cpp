@@ -128,6 +128,91 @@ int Board::CreateBoardTexture() {
     return 0;
 }
 
+bool Board::CreatePromoMenuTexture() {
+    /*
+     * need to add images of the (teamcolour) bishop, knight, rook, queen onto the menu texture for the user to
+     * select from
+     */
+
+    std::string col[2] = {"Black", "White"};
+    int cIndex = 0;
+
+    for (SDL_Texture* &menu : promoMenus) {
+        // Remove prior contents if exist
+        if (menu != nullptr) SDL_DestroyTexture(menu);
+
+        // Create targetable texture for renderer to draw to
+        menu = SDL_CreateTexture(window.renderer, SDL_PIXELFORMAT_RGBA8888,SDL_TEXTUREACCESS_TARGET,
+                                 promoMenuRect.w, promoMenuRect.h);
+        if (menu == nullptr) {
+            LogError("Failed to create promoMenu texture", SDL_GetError(), false);
+            return false;
+        }
+
+        // Change the rendering target
+        SDL_SetRenderTarget(window.renderer, menu);
+
+        // Now apply the base image
+        promoMenuBase = IMG_LoadTexture(window.renderer, "../Resources/Menus/PromotionMenu.png");
+        if (promoMenuBase == nullptr) {
+            LogError("Failed to create promoMenu base texture", SDL_GetError(), false);
+            return false;
+        }
+
+        // Draw base image to target
+        SDL_RenderCopy(window.renderer, promoMenuBase, nullptr, nullptr);
+
+        // Piece textures values
+        SDL_Texture* pieceTexture;
+        const int nPieces = 4;
+        std::string path;
+
+        // set offset values for icons
+        const int offsetW = promoMenuRect.w / 25;
+        const int offsetH = promoMenuRect.h / 7;
+        for (auto &pir : promoIconRects) pir = {offsetW, offsetH, offsetW * 5, offsetH * 5};
+
+        for (int i = 0; i < nPieces; i++) {
+            // Determine path (dont even with the += it just stopped a warning about string append)
+            path += "../Resources/" + pieceNames[i] += "/" + pieceNames[i] += "_" + col[cIndex] + "_" + PIECE_STYLE + ".png";
+
+            // Fetch texture
+            if ((pieceTexture = IMG_LoadTexture(window.renderer, path.c_str())) == nullptr) {
+                std::string issue = "Failed to load " + pieceNames[i] + " icon for promoMenus";
+                LogError(issue, SDL_GetError(), false);
+                return false;
+            }
+
+            promoIconRects[i].x += i * 6 * offsetW;
+            if (SDL_RenderCopy(window.renderer, pieceTexture, nullptr, &promoIconRects[i]) != 0) {
+                LogError("Failed to add icon texture to promoMenus", SDL_GetError(), false);
+                return false;
+            }
+
+            path = "";
+        }
+
+        cIndex++;
+    }
+
+    // Reset render target
+    SDL_SetRenderTarget(window.renderer, nullptr);
+
+    // Reposition the promoMenus rect
+    promoMenuRect.x = menuRect.w + boardRect.w/2 - promoMenuRect.w/2;
+    promoMenuRect.y = boardRect.h/2 - promoMenuRect.h/2;
+
+    printf("x : %d y : %d w : % d h : %d\n", promoMenuRect.x, promoMenuRect.y, promoMenuRect.w, promoMenuRect.h);
+
+    // success
+    return true;
+}
+
+void Board::DisplayPromoMenu(Piece* _promotingPiece) {
+    auto displayMenu = promoMenus[(_promotingPiece->GetPieceInfoPtr()->colID == 'B') ? 0 : 1];
+    SDL_RenderCopy(window.renderer, displayMenu, nullptr, &promoMenuRect);
+}
+
 void Board::DisplayGameBoard() {
     // Display Board background
     SDL_RenderCopy(window.renderer, boardTexture, nullptr, &boardRect);
@@ -148,6 +233,26 @@ void Board::DisplayGameBoard() {
     // display game info background
     SDL_RenderCopy(window.renderer, boardBases[1], nullptr, &gameInfoRect);
 }
+
+std::string Board::GetPromoMenuInput() {
+    /*
+     * Returns string name on selection of Knight, Bishop, Rook or Queen respectively
+     */
+
+    for (int irIndex = 0; irIndex < 4; irIndex++ ) {
+        SDL_Rect iconRect = promoIconRects[irIndex];
+        iconRect.x += promoMenuRect.x;
+        iconRect.y += promoMenuRect.y;
+
+        if (mouse.UnheldClick(iconRect)) {
+            printf("clicked on %s\n", pieceNames[irIndex].c_str());
+            return pieceNames[irIndex];
+        }
+    }
+
+    return "no promote";
+}
+
 
 void Board::GetRowsColumns(int &_rows, int &_cols) {
     _rows = rows;
