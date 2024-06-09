@@ -9,6 +9,7 @@
 #include <fstream>
 
 #include "src_headers/GlobalSource.h"
+#include "src_headers/GlobalVars.h"
 #include "src_headers/Board.h"
 #include "src_headers/Piece.h"
 #include "src_headers/SelectedPiece.h"
@@ -98,6 +99,14 @@ int main(int argc, char** argv) {
 
     // clean up any other errors which may appear before deliberate error checking
     SDL_ClearError();
+
+    /*
+     * CONFIG FILES
+     */
+
+    if (!ConfigExistsAIsufbasf()) {
+        return -1;
+    }
 
     /*
      *  CONSTRUCT GAME ELEMENTS

@@ -11,6 +11,7 @@
 #include <algorithm>
 
 #include "GlobalSource.h"
+#include "GlobalVars.h"
 #include "Board.h"
 
 class Piece;

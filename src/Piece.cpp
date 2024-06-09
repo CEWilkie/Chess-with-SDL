@@ -10,7 +10,7 @@ Piece::Piece(const std::string& _name, const std::string& _color, Position<char,
 
     // Set path to png file of piece
     // Eg: Knight_White.png. the relevant image files are named as such.
-    imgPath = "../Resources/" + info->name + "/" + info->name + "_" + info->color + ".png";
+    imgPath = "../Resources/" + info->name + "/" + info->name + "_" + info->color + "_" + PIECE_STYLE + ".png";
 
     // Create Texture of Piece
     pieceTexture = IMG_LoadTexture(window.renderer, imgPath.c_str());
