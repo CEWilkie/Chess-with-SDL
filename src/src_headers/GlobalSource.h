@@ -11,6 +11,10 @@
 #include <ctime>
 #include <SDL.h>
 
+/*
+ * Main Definitions
+ */
+
 template<class T>
 void LogError(const std::string& errorMsgDecorative = "", const T& errorMsg = "", bool fatal = false) {
     printf("New Error Raised!\nError Desc: %s\nError Proper: %s\nError Fatal?  %d\n",

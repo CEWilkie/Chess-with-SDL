@@ -104,7 +104,7 @@ int main(int argc, char** argv) {
      * CONFIG FILES
      */
 
-    if (!ConfigExistsAIsufbasf()) {
+    if (!ConfigExists()) {
         return -1;
     }
 
