@@ -193,6 +193,54 @@ void Board::GetBorderedRectFromPosition(SDL_Rect &rect, Position<char, int> posi
     rect.y += int((float)tileHeight*tile_borderHeight);
 }
 
+/*
+ * SETTERS
+ */
+
+void Board::FillToBounds(int _w, int _h) {
+    printf("w: %d h: %d\n", _w, _h);
+    /*
+     * section min size / sum of minimums = the multiplier of the given _width or _height values to determine the
+     * sections new size. Ratio of newBoardSize / minBoardSize is used to alter the other sections sizes.
+     */
+
+    double ratio;
+    int sumMinWidth = minBoardSize + minMenuWidth + minInfoWidth;
+
+    // Determine size of the main board and ensure height of screen is not exceeded
+    ratio = (double)minBoardSize / sumMinWidth;
+    boardRect.w = int(_w * ratio);
+    if (boardRect.w > _h) {
+        boardRect.w = _h;
+        ratio = (double)boardRect.w / minBoardSize;
+    }
+    boardRect.h = boardRect.w;
+
+    // Determine size of left menu board
+    menuRect.w = int(minMenuWidth * ratio);
+    menuRect.h = boardRect.h;
+
+    // Determine size of right game info board
+    gameInfoRect.w = int(minInfoWidth * ratio);
+    gameInfoRect.h = boardRect.h;
+
+    /*
+     * Reposition rects due to new sizes
+     */
+
+    // menuRect remains the same at 0,0
+    boardRect.x = menuRect.w;
+    gameInfoRect.x = boardRect.x + boardRect.w;
+
+    // now update the TileWidth, TileHeight values
+    tileWidth = int(0.8 * (float)boardRect.w / columns);
+    tileHeight = int(0.8 * (float)boardRect.h / rows);
+}
+
+/*
+ * GAMEPLAY RECORDING
+ */
+
 bool Board::GameDataDirectoryExists() {
     /*
      * Check to ensure that the directory to house GameData (path specified by string gameDataDirPath) exists.
@@ -257,10 +305,12 @@ void Board::ClearExcessGameFiles() {
     });
 
     // remove folders
-    uintmax_t nRemoved = 0; // removed count
+    uintmax_t nRemoved = 0;
+    std::vector<std::string> dirsRemoved {};
     for (auto pt = pathTimes.begin(); pt < pathTimes.end();) {
         if (pathTimes.size() > 10) {
             nRemoved += std::filesystem::remove_all(pt->a);
+            dirsRemoved.push_back(pt->a);
 
             pt = pathTimes.erase(pt);
             continue;
@@ -268,7 +318,12 @@ void Board::ClearExcessGameFiles() {
         pt++;
     }
 
-    printf("Removed %ju files/Directories\n", nRemoved);
+    // summary
+    printf("Removed directories:\n");
+    for (const auto& dir : dirsRemoved) {
+        printf("%s\n", dir.c_str());
+    }
+    printf("Removed %ju total files/Directories\n\n", nRemoved);
 }
 
 bool Board::CreateGameFiles() {

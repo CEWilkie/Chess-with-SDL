@@ -40,3 +40,11 @@ bool ConfigExists() {
     // no issues encountered, files + dir exist
     return true;
 };
+
+bool PieceLayoutsExists() {
+    /*
+     * Ensures that the piece layouts (standard games + base variations) exist. If not, then they are created.
+     */
+
+    // Standard Layout
+}

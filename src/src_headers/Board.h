@@ -16,8 +16,15 @@
 #include "GlobalSource.h"
 #include "Piece.h"
 
+/*
+ * Temp Defs
+ */
+
 class Piece;
-class Board;
+
+/*
+ * Main Defs
+ */
 
 class Board{
     private:
@@ -31,9 +38,9 @@ class Board{
         float tile_borderWidth = 0.1;
         float tile_borderHeight = 0.1;
 
-        // minimum dimensions of square board
+        // minimum dimensions of square board widths
         const int minBoardSize = 500;
-        const int minMenuWidth = 75;
+        const int minMenuWidth = 150;
         const int minInfoWidth = 300;
 
         // Rects to retain size/position info of each board section
@@ -90,6 +97,7 @@ class Board{
         void GetBorderedRectFromPosition(SDL_Rect &rect, Position<char, int> position) const;
 
         // Setters
+        void FillToBounds(int _w, int _h);
 
         // Gameplay Recording
         bool GameDataDirectoryExists();

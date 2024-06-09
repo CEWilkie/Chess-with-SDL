@@ -338,7 +338,14 @@ int main(int argc, char** argv) {
          *  RECREATE TEXTURES IF REQUIRED
          */
 
-        if (EnsureWindowSize(&board) != 0){
+        int winSizeChanged = EnsureWindowSize(&board);
+        if (winSizeChanged == 1) {
+            // Update board size
+            int w, h;
+            SDL_GetWindowSize(window.window, &w, &h);
+            board.FillToBounds(w, h);
+        }
+        if (winSizeChanged != 0){
             // board
             board.CreateBoardTexture();
 
@@ -352,6 +359,7 @@ int main(int argc, char** argv) {
                 piece->GetRectOfBoardPosition(board);
             }
         }
+
 
         /*
          *  UPDATE SCREEN

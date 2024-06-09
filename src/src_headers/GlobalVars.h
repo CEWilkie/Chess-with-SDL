@@ -20,8 +20,11 @@
  */
 
 inline std::string PIECE_STYLE = "Temp";
+inline std::string BOARD_STYLE;
 //... other vars here
 
 bool ConfigExists();
+
+bool PieceLayoutsExists();
 
 #endif //CHESS_WITH_SDL_GLOBALVARS_H
