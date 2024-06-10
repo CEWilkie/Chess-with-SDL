@@ -326,12 +326,14 @@ void Board::FillToBounds(int _w, int _h) {
     boardRect.h = boardRect.w;
 
     // Determine size of left menu board
-    menuRect.w = int(minMenuWidth * ratio);
     menuRect.h = boardRect.h;
+    ratio = (double)menuRect.h / minBoardSize;
+    menuRect.w = int(minMenuWidth * ratio);
 
     // Determine size of right game info board
-    gameInfoRect.w = int(minInfoWidth * ratio);
     gameInfoRect.h = boardRect.h;
+    ratio = (double)gameInfoRect.h / minBoardSize;
+    gameInfoRect.w = int(minInfoWidth * ratio);
 
     /*
      * Reposition rects due to new sizes
