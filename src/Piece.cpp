@@ -396,6 +396,15 @@ bool Piece::ReadyToPromote() {
     return (canPromote && info->gamepos.y == eoc && !captured);
 }
 
+void Piece::UpdatePromoteInfo(Piece* _promotedTo) {
+    promoted = true;
+    promotedTo = _promotedTo;
+}
+
+Piece* Piece::GetPromotedTo() const {
+    return promotedTo;
+}
+
 /*
  * SELECTING PIECES
  */

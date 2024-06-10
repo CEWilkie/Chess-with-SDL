@@ -193,7 +193,7 @@ int main(int argc, char** argv) {
 
     auto teamptr = &white_pieces;
     auto oppptr = &black_pieces;
-    SelectedPiece selectedPiece(teamptr, oppptr, &board);
+    SelectedPiece selectedPiece {};
 
     bool running = true;
     bool eot = false;
@@ -212,6 +212,8 @@ int main(int argc, char** argv) {
 
         // Display Pieces and fetch their moves
         for (Piece* piece : all_pieces) {
+            piece->ClearMoves();
+            piece->ClearNextMoves();
             piece->FetchMoves(*teamptr, *oppptr, board);
             piece->PreventMoveIntoCheck(*teamptr, *oppptr, board);
 
@@ -261,16 +263,18 @@ int main(int argc, char** argv) {
         }
 
         /*
-         * EVENT MANAGEMENT
+         * EVENT MANAGEMENT - MOVES AND PIECE SELECTION CHECKING
          */
 
-        // check if user has made a move
-        if (selectedPiece.MadeMove(oppptr, board)) {
+        // check if user has clicked on a move
+        if (selectedPiece.CheckForMoveClicked(&board)) {
+            // make move
+            selectedPiece.MakeMove(&board);
             eot = true;
         }
 
         // check if user clicks on a piece
-        if (!eot) selectedPiece.CheckForClicked(teamptr);
+        if (!eot) selectedPiece.CheckForPieceClicked(teamptr);
 
         /*
          *  END OF TURN MANAGEMENT
@@ -305,12 +309,15 @@ int main(int argc, char** argv) {
                     if (promotedPiece != nullptr) {
                         // Piece has been made, mark pawn as captured and add new piece to teamptr
                         piece->Captured(true);
+                        piece->UpdatePromoteInfo(promotedPiece);
 
                         promotedPiece->CreateTextures();
                         promotedPiece->GetRectOfBoardPosition(board);
 
                         teamptr->push_back(promotedPiece);
                         all_pieces.push_back(promotedPiece);
+
+                        promotedPiece->FetchMoves(*teamptr, *oppptr, board);
 
                         allTasksComplete = true;
                     }
@@ -319,19 +326,16 @@ int main(int argc, char** argv) {
         }
 
         if (eot && allTasksComplete) {
-            // remove moves from this turn
+            // update checker vars
             for (auto piece : all_pieces) {
-                piece->ClearMoves();
-                piece->ClearNextMoves();
                 piece->UpdateCheckerVars();
             }
 
-            selectedPiece.SwapPieceSetPointers();
-            std::swap(teamptr, oppptr);
+            // Create and get the lastMove string
+            selectedPiece.CreateACNstring(teamptr);
+            board.WriteMoveToFile(selectedPiece.GetACNMoveString());
 
-            std::string lastMove;
-            selectedPiece.GetMove(lastMove);
-            board.WriteMoveToFile(lastMove);
+            std::swap(teamptr, oppptr);
             board.IncrementTurn();
 
             eot = false;

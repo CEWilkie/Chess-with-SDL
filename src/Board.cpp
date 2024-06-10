@@ -239,6 +239,9 @@ std::string Board::GetPromoMenuInput() {
      * Returns string name on selection of Knight, Bishop, Rook or Queen respectively
      */
 
+    // no click made yet
+    if (!mouse.IsUnheldActive()) return "noinput";
+
     for (int irIndex = 0; irIndex < 4; irIndex++ ) {
         SDL_Rect iconRect = promoIconRects[irIndex];
         iconRect.x += promoMenuRect.x;
@@ -250,7 +253,8 @@ std::string Board::GetPromoMenuInput() {
         }
     }
 
-    return "no promote";
+    // click made, but not on menu. exit menu
+    return "";
 }
 
 

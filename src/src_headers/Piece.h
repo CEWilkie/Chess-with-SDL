@@ -83,6 +83,8 @@ class Piece {
         bool canPassant = false;
         int passantTimer = 0;
         bool canPromote = false;
+        bool promoted = false;
+        Piece* promotedTo = nullptr;
         int dir = 1;
 
         // user input detection
@@ -144,6 +146,8 @@ class Piece {
 
         // Promotions
         bool ReadyToPromote();
+        void UpdatePromoteInfo(Piece* _promotedTo);
+        Piece* GetPromotedTo() const;
 
         /*
          * SELECTING PIECES

@@ -92,6 +92,14 @@ class Mouse {
         bool HeldClick(SDL_Rect rect) const {
             return active && heldactive && InRect(rect);
         }
+
+        bool IsHeldActive() const {
+            return active;
+        }
+
+        bool IsUnheldActive() const {
+            return active && !heldactive;
+        }
 };
 inline Mouse mouse;
 
