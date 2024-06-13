@@ -4,9 +4,9 @@
 
 #include "src_headers/Bishop.h"
 
-Bishop::Bishop(const std::string &_name, const std::string &_color, Position<char, int> _gamepos)
-: Piece(_name, _color,_gamepos) {
-    info->pieceID = 'B';
+Bishop::Bishop(const std::string &_name, char _colID, Position<char, int> _gamepos)
+: Piece(_name, _colID,_gamepos) {
+
 }
 
 void Bishop::FetchMoves(const std::vector<Piece *> &_teamPieces, const std::vector<Piece *> &_oppPieces,

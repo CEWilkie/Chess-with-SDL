@@ -4,24 +4,37 @@
 
 #include "src_headers/Piece.h"
 
-Piece::Piece(const std::string& _name, const std::string& _color, Position<char, int> _gamepos) {
+Piece::Piece(const std::string& _name, char _colID, Position<char, int> _gamepos) {
     // set piece info values
-    info = new Piece_Info{_name, (char)tolower(_gamepos.x), _color, _color[0], _gamepos};
+    info = new Piece_Info{_name, (char)tolower(_gamepos.x), _colID, _gamepos};
+    if (_name != "Pawn") info->pieceID = _name[0];
+    if (_name == "Knight") info->pieceID = 'N';
 
-    // Set path to png file of piece
-    // Eg: Knight_White.png. the relevant image files are named as such.
-    imgPath = "../Resources/" + info->name + "/" + info->name + "_" + info->color + "_" + PIECE_STYLE + ".png";
+    // Load Texture for piece
+    Texture t;
+    switch (info->pieceID) {
+        case 'K': t = WHITE_KING; break;
+        case 'Q': t = WHITE_QUEEN; break;
+        case 'R': t = WHITE_ROOK; break;
+        case 'B': t = WHITE_BISHOP; break;
+        case 'N': t = WHITE_KNIGHT; break;
+        default: t = WHITE_PAWN; break;
+    }
+    info->textureID = Texture(t + (info->colID == 'W' ? 0 : 1) + PIECE_STYLE.second);
+    tm->OpenTexture(info->textureID);
 
-    // Create Texture of Piece
-    pieceTexture = IMG_LoadTexture(window.renderer, imgPath.c_str());
+    // Load texture for move display
+    tm->OpenTexture(MOVE);
+    tm->OpenTexture(CAPTURE);
+    tm->OpenTexture(SELECTED);
 
-    // Set initial game board position
-    info->gamepos = _gamepos;
+    // Create rects
+    rm->NewResource({0, 0, 0, 0}, Rect::PIECE_RECT);
+    rm->NewResource({0, 0, 0, 0}, Rect::BOARDPOS_RECT);
 
-    // If white, move up board. If black, move down board. This is only necessary for pawns
+
+    // Pawn info, direction of movement, and canPromote status
     dir = (info->colID == 'W') ? 1 : -1;
-
-    // If pawn, canPromote is true
     canPromote = (info->name == "Pawn");
 }
 
@@ -35,33 +48,14 @@ int Piece::CreateTextures() {
     /*
      * Create the textures for move highlights, the piece model
      */
-
-    // move highlights
-    if ((moveHighlights[0] = IMG_LoadTexture(window.renderer, "../Resources/Piece/Selected_Target.png")) == nullptr) {
-        LogError("Failed to create selected texture", SDL_GetError(), false);
-        return -1;
-    }
-    if ((moveHighlights[1] = IMG_LoadTexture(window.renderer, "../Resources/Piece/Available_Space.png")) == nullptr) {
-        LogError("Failed to create selected texture", SDL_GetError(), false);
-        return -1;
-    }
-    if ((moveHighlights[2] = IMG_LoadTexture(window.renderer, "../Resources/Piece/Attacking_Piece.png")) == nullptr) {
-        LogError("Failed to create selected texture", SDL_GetError(), false);
-        return -1;
-    }
-
-    // Piece model
-    if ((pieceTexture = IMG_LoadTexture(window.renderer, imgPath.c_str())) == nullptr) {
-        LogError("Failed to create piece pieceTexture", SDL_GetError(), false);
-        return -1;
-    }
-
     return 0;
 }
 
 void Piece::GetRectOfBoardPosition(const Board& board) {
-    board.GetBorderedRectFromPosition(boardposRect, info->gamepos);
-    pieceRect = boardposRect;
+    SDL_Rect rect = rm->FetchResource(Rect::BOARDPOS_RECT);
+
+    board.GetBorderedRectFromPosition(rect, info->gamepos);
+    rm->UpdateExistingResource(rect, Rect::BOARDPOS_RECT);
 }
 
 // Displaying Piece / Moves
@@ -70,20 +64,28 @@ void Piece::DisplayPiece() {
     // Don't display piece if captured
     if (captured) return;
 
+    // temp vars
+    SDL_Texture* tempTexture;
+    SDL_Rect tempRect;
+
     if(selected) {
-        SDL_RenderCopy(window.renderer, moveHighlights[0], nullptr, &boardposRect);
+        tempTexture = tm->FetchTexture(SELECTED);
+        tempRect = rm->FetchResource(Rect::BOARDPOS_RECT);
+        SDL_RenderCopy(window.renderer, tempTexture, nullptr, &tempRect);
     }
 
     // move to mouse whilst the mousdown is held from initial click
     if(followMouse) {
-        pieceRect.x = mouse.GetMousePosition().x - pieceRect.w / 2;
-        pieceRect.y = mouse.GetMousePosition().y - pieceRect.h / 2;
+        tempRect = rm->FetchResource(Rect::PIECE_RECT);
+        tempRect.x = mouse.GetMousePosition().x - tempRect.w / 2;
+        tempRect.y = mouse.GetMousePosition().y - tempRect.h / 2;
     }
-    else {
-        pieceRect = boardposRect;
-    }
+    else tempRect = rm->FetchResource(Rect::BOARDPOS_RECT);
+    rm->UpdateExistingResource(tempRect, Rect::PIECE_RECT);
 
-    SDL_RenderCopy(window.renderer, pieceTexture, nullptr, &pieceRect);
+    tempTexture = tm->FetchTexture(info->textureID);
+    tempRect = rm->FetchResource(Rect::PIECE_RECT);
+    SDL_RenderCopy(window.renderer, tempTexture, nullptr, &tempRect);
 }
 
 void Piece::DisplayMoves(const Board& board) {
@@ -98,12 +100,14 @@ void Piece::DisplayMoves(const Board& board) {
         board.GetBorderedRectFromPosition(moveRect, move.GetPosition());
 
         // if the move is a capture (except if capturing same team rook as this is a castling move) then use diff icon
-        int texture_index = 1;
+        SDL_Texture* moveIcon = tm->FetchTexture(MOVE);
         if (move.GetTarget() != nullptr) {
-            if (move.GetTarget()->GetPieceInfoPtr()->colID != info->colID) texture_index = 2;
+            if (move.GetTarget()->GetPieceInfoPtr()->colID != info->colID) {
+                moveIcon = tm->FetchTexture(CAPTURE);
+            }
         }
 
-        SDL_RenderCopy(window.renderer, moveHighlights[texture_index], nullptr, &moveRect);
+        SDL_RenderCopy(window.renderer, moveIcon, nullptr, &moveRect);
     }
 }
 
@@ -367,6 +371,12 @@ void Piece::UpdateCheckerVars() {
 void Piece::Captured(bool _captured) {
     // update captured value to prevent piece from being interacted with or displayed.
     captured = _captured;
+
+    // Close textures
+    tm->CloseTexture(info->textureID);
+    tm->CloseTexture(MOVE);
+    tm->CloseTexture(CAPTURE);
+    tm->CloseTexture(SELECTED);
 }
 
 void Piece::TempMoveTo(AvailableMove* _tempmove) {
@@ -412,7 +422,7 @@ Piece* Piece::GetPromotedTo() const {
 bool Piece::CheckClicked() {
     if (captured) return false;
 
-    return  mouse.UnheldClick(boardposRect);
+    return  mouse.UnheldClick(rm->FetchResource(Rect::BOARDPOS_RECT));
 }
 
 bool Piece::UpdateSelected() {
@@ -420,7 +430,7 @@ bool Piece::UpdateSelected() {
     if  (captured) return false;
 
     // user clicked in region of piece, so piece is selected
-    selected = mouse.UnheldClick(boardposRect);
+    selected = mouse.UnheldClick(rm->FetchResource(Rect::BOARDPOS_RECT));
     return selected;
 }
 

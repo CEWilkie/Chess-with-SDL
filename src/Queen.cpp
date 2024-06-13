@@ -4,8 +4,8 @@
 
 #include "src_headers/Queen.h"
 
-Queen::Queen(const std::string &_name, const std::string &_color, Position<char, int> _gamepos)
-: Piece(_name, _color,_gamepos) {
+Queen::Queen(const std::string &_name, char _colID, Position<char, int> _gamepos)
+: Piece(_name, _colID,_gamepos) {
     info->pieceID = 'Q';
 }
 
@@ -25,7 +25,7 @@ void Queen::FetchMoves(const std::vector<Piece *> &_teamPieces, const std::vecto
     int maxRows, maxCols, dr, dc;
     Board::GetRowsColumns(maxRows, maxCols);
 
-    // repeat 4 times for each of the diagonal directions (order T -> R -> B -> L)
+    // repeat 4 times for each of the diagonal directions (order ResType -> R -> B -> L)
     for (int direction = 0; direction < 4; direction++) {
         // flip direction to negative value on B, L directions
         int dir = (direction > 1) ? -1 : 1;

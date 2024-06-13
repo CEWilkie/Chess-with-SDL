@@ -13,14 +13,19 @@
 #include <sstream>
 #include <chrono>
 #include <filesystem>
+
+#include "GlobalResources.h"
 #include "GlobalSource.h"
 #include "Piece.h"
+#include "ResourceManagers.h"
 
 /*
- * Temp Defs
+ * local temp defs
  */
 
 class Piece;
+template<class Key, class Resource>
+class ResourceManager;
 
 /*
  * Main Defs
@@ -28,47 +33,27 @@ class Piece;
 
 class Board{
     private:
-        // rows, columns on board
+        // Game Board Dimensions / info
         static const int rows = 8;
         static const int columns = 8;
-        int row_labels[rows] {};
-        char col_labels[columns] {};
-        int tileWidth {};
-        int tileHeight {};
+
+        // Tile inside border size vars
         float tile_borderWidth = 0.1;
         float tile_borderHeight = 0.1;
+        float boardBorder = 0.1;
 
         // minimum dimensions of square board widths
-        const int minBoardSize = 500;
+        const int minBoardWidth = 500;
         const int minMenuWidth = 150;
         const int minInfoWidth = 300;
 
-        // Rects to retain size/position info of each board section
-        SDL_Rect menuRect = {0, 0, minMenuWidth, minBoardSize};
-        SDL_Rect boardRect = {minMenuWidth, 0, minBoardSize, minBoardSize};
-        SDL_Rect gameInfoRect = {minMenuWidth+minBoardSize, 0, minInfoWidth, minBoardSize};
+        // Global resource manager pointers
+        TextureManager* tm = TextureManager::GetInstance();
+        FontManager* fm = FontManager::GetInstance();
 
-        // SDL display
-        SDL_Texture* tileTextures[2] {};
-        SDL_Texture* boardTexture {};
-        SDL_Texture* boardBases[2] {};
-        SDL_Texture* row_label_textures[rows]{};
-        SDL_Texture* col_label_textures[columns]{};
-
-        std::string whitePath {"../Resources/GameBoard/Cream_Tile.png"};
-        std::string blackPath {"../Resources/GameBoard/Brown_Tile.png"};
-        std::string basePath {"../Resources/GameBoard/Board_Base.png"};
-        std::string secondBasePath {"../Resources/GameBoard/Secondary_Base.png"};
-
-        SDL_Rect row_label_rects[rows]{};
-        SDL_Rect col_label_rects[columns]{};
-        SDL_Surface* surface{};
-
-        SDL_Texture* promoMenus[2] {nullptr, nullptr};
-        SDL_Texture* promoMenuBase {};
-        SDL_Rect promoMenuRect {0, 0, 200, 56};
-        std::string pieceNames[4] {"Bishop", "Knight", "Rook", "Queen"};
-        SDL_Rect promoIconRects[4] {};
+        // Local resource manager pointers
+        enum class Rect;
+        ResourceManager<Rect, SDL_Rect>* rm = new ResourceManager<Rect, SDL_Rect>;
 
         // Gameplay recording vars
         std::string gameDataDirPath = "../GameData";
@@ -88,22 +73,13 @@ class Board{
         std::string GetPromoMenuInput();
 
         // Getters
-        template<class T>
-        void GetTileDimensions(T& _w, T& _h) const {
-            _w = T(tileWidth);
-            _h = T(tileHeight);
-        }
-        template<class T>
-        void GetMinDimensions(T& _w, T& _h) const {
-            _w = T(minBoardSize + minInfoWidth + minMenuWidth);
-            _h = T(minBoardSize);
-        }
-
+        void GetTileDimensions(int& _w, int& _h) const;
+        void GetMinDimensions(int& _w, int& _h) const;
         static void GetRowsColumns(int& _rows, int& _cols);
         static Pair<int> GetRowsColumns() ;
-        void GetBoardBLPosition(int& x, int& y) const;
+        void GetBoardBLPosition(int& _x, int& _y) const;
         void GetTileRectFromPosition(SDL_Rect& rect, Position<char, int> position) const;
-        void GetBorderedRectFromPosition(SDL_Rect &rect, Position<char, int> position) const;
+        void GetBorderedRectFromPosition(SDL_Rect &_rect, Position<char, int> _position) const;
 
         // Setters
         void FillToBounds(int _w, int _h);
@@ -117,5 +93,13 @@ class Board{
         void IncrementTurn();
 };
 
+/*
+ * Local Enums
+ */
+
+enum class Board::Rect {
+    BOARD, OPTIONS, GAME_INFO, TILE, PROMO_MENU,
+    PROMO_QUEEN, PROMO_ROOK, PROMO_BISHOP, PROMO_KNIGHT,
+};
 
 #endif //CHESS_WITH_SDL_BOARD_H

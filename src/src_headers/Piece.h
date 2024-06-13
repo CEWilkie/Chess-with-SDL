@@ -11,7 +11,7 @@
 #include <algorithm>
 
 #include "GlobalSource.h"
-#include "GlobalVars.h"
+#include "GlobalResources.h"
 #include "Board.h"
 
 /*
@@ -28,10 +28,10 @@ class Piece;
 struct Piece_Info {
     std::string name = "Pawn";
     char pieceID = 'a';
-    std::string color = "White";
     char colID = 'W';
     Position<char, int> gamepos {'A', 7};
     Position<char, int> lastpos {'A', 7};
+    Texture textureID = WHITE_PAWN;
 };
 
 class AvailableMove{
@@ -70,12 +70,15 @@ class Piece {
         // Piece identification
         Piece_Info* info {};
 
+        // Global ResourceManager pointers
+        TextureManager* tm = TextureManager::GetInstance();
+
+        // Local ResourceManager pointers
+        enum class Rect;
+        ResourceManager<Rect, SDL_Rect>* rm = new ResourceManager<Rect, SDL_Rect>;
+
         // SDL display
         std::string imgPath {};
-        SDL_Texture* pieceTexture {};
-        SDL_Texture* moveHighlights[3] {};
-        SDL_Rect pieceRect {};
-        SDL_Rect boardposRect {};
         float b_width = 0.1;
 
         // pawn movements
@@ -93,7 +96,7 @@ class Piece {
 
     public:
         // Constructor
-        Piece(const std::string& _name, const std::string& _color, Position<char, int> _target);
+        Piece(const std::string& _name, char _colID, Position<char, int> _position);
 
         /*
          * DISPLAY
@@ -165,6 +168,14 @@ class Piece {
         std::vector<AvailableMove>* GetAvailableMovesPtr() { return &validMoves; };
         bool HasMoved() const { return hasMoved; };
         bool IsCaptured() const { return captured; };
+};
+
+/*
+ * Local Enums
+ */
+
+enum class Piece::Rect {
+        PIECE_RECT, BOARDPOS_RECT,
 };
 
 

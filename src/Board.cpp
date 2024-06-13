@@ -5,126 +5,137 @@
 #include "src_headers/Board.h"
 
 Board::Board() {
-    // Create Textures
-    if ((tileTextures[0] = IMG_LoadTexture(window.renderer, blackPath.c_str())) == nullptr) {
-        LogError("Failed to obtain pieceTexture", SDL_GetError(), false);
-    }
-    if ((tileTextures[1] = IMG_LoadTexture(window.renderer, whitePath.c_str())) == nullptr) {
-        LogError("Failed to obtain pieceTexture", SDL_GetError(), false);
-    }
-    if ((boardBases[0] = IMG_LoadTexture(window.renderer, basePath.c_str())) == nullptr) {
-        LogError("Failed to obtain pieceTexture", SDL_GetError(), false);
-    }
-    if ((boardBases[1] = IMG_LoadTexture(window.renderer, secondBasePath.c_str())) == nullptr) {
-        LogError("Failed to obtain pieceTexture", SDL_GetError(), false);
-    }
+    // Add rects for game board regions
+    rm->NewResource({0, 0, minMenuWidth, minBoardWidth}, Rect::OPTIONS);
+    rm->NewResource({minMenuWidth, 0, minBoardWidth, minBoardWidth}, Rect::BOARD);
+    rm->NewResource({minMenuWidth + minBoardWidth, 0, minInfoWidth, minBoardWidth}, Rect::GAME_INFO);
+    rm->NewResource({0, 0, 0, 0}, Rect::PROMO_MENU);
 
-    // Create labels for rows
-    for (int r = 0; r < rows; r++) {
-        row_labels[r] = 1 + r;
-    }
+    // Construct rect for board tile
+    SDL_Rect tileRect = {};
+    GetTileRectFromPosition(tileRect, {'a', 1});
+    rm->NewResource(tileRect, Rect::TILE);
 
-    // Create labels for columns
-    for (int c = 0; c < columns; c++) {
-        col_labels[c] = char('A' + c);
-    }
+    // Open textures
+    tm->OpenTexture(BOARD_COMPILED);
+    tm->OpenTexture(PROMO_WHITE_COMPILED);
+    tm->OpenTexture(PROMO_BLACK_COMPILED);
+    tm->OpenTexture(Texture(BOARD_BASE_SECONDARY + BOARD_STYLE.second));
 }
 
 int Board::CreateBoardTexture() {
-    // determine tile size
-    tileWidth = int(0.8 * (float)boardRect.w / columns);
-    tileHeight = int(0.8 * (float)boardRect.h / rows);
+    // Open required textures
+    tm->OpenTexture(Texture(BOARD_BASE + BOARD_STYLE.second));
+    tm->OpenTexture(Texture(WHITE_TILE + BOARD_STYLE.second));
+    tm->OpenTexture(Texture(BLACK_TILE + BOARD_STYLE.second));
+    auto font = fm->OpenExistingFont(Font::CONFESSION);
 
-    // Create the pieceTexture to compile into
-    SDL_DestroyTexture(boardTexture);
-    boardTexture = SDL_CreateTexture(window.renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET,
-                                     boardRect.w, boardRect.h);
+    // Get board tile dimensions, and board rect
+    SDL_Rect boardRect = rm->FetchResource(Rect::BOARD);
+    SDL_Rect tileRect;
+
+    // Create temp textures to draw to
+    SDL_Texture* tempTexture;
+    SDL_Texture* boardTexture = SDL_CreateTexture(window.renderer,
+                                                  SDL_PIXELFORMAT_RGBA8888,
+                                                  SDL_TEXTUREACCESS_TARGET,
+                                                  boardRect.w, boardRect.h);
     if (boardTexture == nullptr) {
-        LogError("Failed to create Board Texture", SDL_GetError(), false);
+        LogError("Failed to create boardTexture", SDL_GetError(), false);
         return -1;
     }
 
+    // Set the render target to the newly created board texture
     if (SDL_SetRenderTarget(window.renderer, boardTexture) != 0) {
         LogError("Failed to set render target", SDL_GetError(), false);
         return -1;
     }
 
-    // Add in Board Base pieceTexture:
-    SDL_Rect tileRect {0, 0, boardRect.w, boardRect.h};
-    SDL_RenderCopy(window.renderer, boardBases[0], nullptr, &tileRect);
+    // Draw Board Base texture
+    tempTexture = tm->FetchTexture(Texture(BOARD_BASE + BOARD_STYLE.second));
+    if (SDL_RenderCopy(window.renderer, tempTexture, nullptr, nullptr) != 0) {
+        LogError("Failed to copy base texture", SDL_GetError(), false);
+        return -1;
+    }
 
-    // Create pieceTexture using the tile textures
-    tileRect = {int(boardRect.w * 0.1), int(boardRect.h * 0.1), tileWidth, tileHeight};
-    int tT_index = 1;
+    // Create board grid using the tile textures
+    bool whiteTile = false;
+    tileRect = {int((double)boardRect.w * boardBorder), int((double)boardRect.h * boardBorder)};
+    GetTileDimensions(tileRect.w, tileRect.h);
     for (int r = 0; r < rows; r++) {
         for (int c = 0; c < columns; c++) {
-            SDL_RenderCopy(window.renderer, tileTextures[tT_index], nullptr, &tileRect);
+            // Draw tile
+            tempTexture = tm->FetchTexture(Texture((whiteTile ? WHITE_TILE : BLACK_TILE) + BOARD_STYLE.second));
+            SDL_RenderCopy(window.renderer, tempTexture, nullptr, &tileRect);
+
+            // move rect position
             tileRect.x += tileRect.w;
-            tT_index = (tT_index == 1) ? 0 : 1;
+            whiteTile = !whiteTile;
         }
-        tT_index = (tT_index == 1) ? 0 : 1;
+        // move up to next row
+        whiteTile = !whiteTile;
         tileRect.x = int(boardRect.w * 0.1);
         tileRect.y += tileRect.h;
     }
 
-    // Create board base texture
-    if ((boardBases[0] = IMG_LoadTexture(window.renderer, basePath.c_str())) == nullptr) {
-        LogError("Failed to create piece pieceTexture", SDL_GetError(), false);
+    // Get font for labels
+    if (font == nullptr) {
+        // exit early on failure
+        LogError("Failed to load font", SDL_GetError(), false);
         return -1;
     }
 
-    // Now create Row / Column label textures
-    TTF_Font* labelFont = TTF_OpenFont("../Resources/Fonts/CF/TCFR.ttf", 100);
-    if (labelFont == nullptr) {
-        LogError("Failed to create font", SDL_GetError(), false);
-        return -1;
+    // Set tileRect position for row labels from BL and indent by tileBorder size
+    tileRect.x = int((double)boardRect.w * boardBorder) + int((double)tileRect.w * tile_borderWidth);
+    tileRect.y = int((double)boardRect.h * (1-2*boardBorder)) ;
+
+    GetTileDimensions(tileRect.w, tileRect.h);
+    std::string label;
+    for (int axis = 0; axis < 2; axis++) {
+        // Axis == 0 -> rows
+        for (int lIndex = 0; lIndex < ((axis == 0) ? rows : columns); lIndex++) {
+            label[0] = (axis == 0) ? char('1' + lIndex) : char('a' + lIndex);
+            SDL_Rect labelRect = {tileRect.x, tileRect.y, int(tileRect.w/2), int(tileRect.h/2)};
+            SDL_Surface* surface;
+
+            // Get label texture
+            surface = TTF_RenderText_Blended(font, label.c_str(), {255, 255, 255});
+            tempTexture = SDL_CreateTextureFromSurface(window.renderer, surface);
+            SDL_FreeSurface(surface);
+
+            // fetch ratio between height of label texture and height of tile
+            std::pair<int, int> labelSize;
+            SDL_QueryTexture(tempTexture, nullptr, nullptr, &labelSize.first, &labelSize.second);
+            float heightRatio = (float)labelSize.second / (float)labelRect.h;
+
+            // set height and width to be proportional
+            labelRect.h = labelRect.h;
+            labelRect.w = int((float)labelSize.first / heightRatio);
+
+            // Adjust position
+            if (axis == 0) labelRect.y = tileRect.y - tileRect.h * lIndex;
+            else labelRect.x = labelRect.x + tileRect.w*lIndex;
+
+            // Draw label
+            SDL_RenderCopy(window.renderer, tempTexture, nullptr, &labelRect);
+        }
+
+        // position rect for columns
+        tileRect.x = int((double)boardRect.w * boardBorder * 2) - tileRect.w / 2 + 2*int((double)tileRect.w * tile_borderWidth);
+        tileRect.y = int((double)boardRect.h * (1-2*boardBorder)) + tileRect.h /2;
     }
 
-    // Create labels for rows
-    for (int r = 0; r < rows; r++) {
-        // Create pieceTexture
-        std::string label = std::to_string(row_labels[r]);
-        surface = TTF_RenderText_Blended(labelFont, label.c_str(), {255, 255, 255});
-        row_label_textures[r] = SDL_CreateTextureFromSurface(window.renderer, surface);
-        SDL_FreeSurface(surface);
+    // close textures
+    tm->CloseTexture(Texture(BOARD_BASE + BOARD_STYLE.second));
+    tm->CloseTexture(Texture(WHITE_TILE + BOARD_STYLE.second));
+    tm->CloseTexture(Texture(BLACK_TILE + BOARD_STYLE.second));
+    fm->CloseFont(Font::CONFESSION);
 
-        // Find ratio to reduce w/h equally
-        int w, h;
-        SDL_QueryTexture(row_label_textures[r], nullptr, nullptr, &w, &h);
-        float ratio = (float)h / (float)tileHeight;
-
-        // Set w/h
-        h = int((float)h / ratio);
-        w = int((float)w / ratio);
-
-        // Create Rect
-        row_label_rects[r] = {boardRect.x + boardRect.w / 20 - w / 2, boardRect.h * 9/10  - tileHeight- (tileHeight * r), w, h};
-    }
-
-    // Create labels for columns
-    for (int c = 0; c < columns; c++) {
-        // Create pieceTexture
-        std::string label = std::string(1, col_labels[c]);
-        surface = TTF_RenderText_Blended(labelFont, label.c_str(), {255, 255, 255});
-        col_label_textures[c] = SDL_CreateTextureFromSurface(window.renderer, surface);
-        SDL_FreeSurface(surface);
-
-        // Find ratio to reduce w/h equally
-        int w, h;
-        SDL_QueryTexture(col_label_textures[c], nullptr, nullptr, &w, &h);
-        float ratio = (float)h / (float)tileHeight;
-
-        // Set w/h
-        h = int((float)h / ratio);
-        w = int((float)w / ratio);
-
-        // Create Rect
-        col_label_rects[c] = {boardRect.x + boardRect.w * 1/10 + tileWidth * c + tileWidth/2 - w/2, boardRect.h * 9/10, w, h};
-    }
+    // Update compiled board texture
+    tm->UpdateTexture(boardTexture, BOARD_COMPILED);
 
     // reset render target to window
     SDL_SetRenderTarget(window.renderer, nullptr);
-    TTF_CloseFont(labelFont);
     return 0;
 }
 
@@ -134,104 +145,113 @@ bool Board::CreatePromoMenuTexture() {
      * select from
      */
 
-    std::string col[2] = {"Black", "White"};
-    int cIndex = 0;
+    // Load textures
+    tm->OpenTexture(PROMO_BASE);
+    for (int c = 0; c < 2; c++) {
+        tm->OpenTexture(Texture(WHITE_QUEEN+PIECE_STYLE.second+c));
+        tm->OpenTexture(Texture(WHITE_ROOK+PIECE_STYLE.second+c));
+        tm->OpenTexture(Texture(WHITE_BISHOP+PIECE_STYLE.second+c));
+        tm->OpenTexture(Texture(WHITE_KNIGHT+PIECE_STYLE.second+c));
+    }
 
-    for (SDL_Texture* &menu : promoMenus) {
-        // Remove prior contents if exist
-        if (menu != nullptr) SDL_DestroyTexture(menu);
+    // Temp vars
+    SDL_Texture* tempTexture;
+    SDL_Rect promoRect = {0, 0, 200, 56};
+    SDL_Rect iconRect;
 
+    for (int col = 0; col < 2; col++){
         // Create targetable texture for renderer to draw to
-        menu = SDL_CreateTexture(window.renderer, SDL_PIXELFORMAT_RGBA8888,SDL_TEXTUREACCESS_TARGET,
-                                 promoMenuRect.w, promoMenuRect.h);
-        if (menu == nullptr) {
-            LogError("Failed to create promoMenu texture", SDL_GetError(), false);
+        SDL_Texture *promoTexture = SDL_CreateTexture(window.renderer,
+                                                      SDL_PIXELFORMAT_RGBA8888,
+                                                      SDL_TEXTUREACCESS_TARGET,
+                                                      promoRect.w, promoRect.h);
+        if (promoTexture == nullptr) {
+            LogError("Failed to create promotion menu Texture", SDL_GetError(), false);
             return false;
         }
 
-        // Change the rendering target
-        SDL_SetRenderTarget(window.renderer, menu);
-
-        // Now apply the base image
-        promoMenuBase = IMG_LoadTexture(window.renderer, "../Resources/Menus/PromotionMenu.png");
-        if (promoMenuBase == nullptr) {
-            LogError("Failed to create promoMenu base texture", SDL_GetError(), false);
+        // Set the render target to the newly created texture
+        if (SDL_SetRenderTarget(window.renderer, promoTexture) != 0) {
+            LogError("Failed to set render target", SDL_GetError(), false);
             return false;
         }
 
-        // Draw base image to target
-        SDL_RenderCopy(window.renderer, promoMenuBase, nullptr, nullptr);
+        // Draw base
+        tempTexture = tm->FetchTexture(PROMO_BASE);
+        if (SDL_RenderCopy(window.renderer, tempTexture, nullptr, nullptr) != 0) {
+            LogError("Failed to draw promoMenu base texture", SDL_GetError(), false);
+            return false;
+        }
 
-        // Piece textures values
-        SDL_Texture* pieceTexture;
-        const int nPieces = 4;
-        std::string path;
-
-        // set offset values for icons
-        const int offsetW = promoMenuRect.w / 25;
-        const int offsetH = promoMenuRect.h / 7;
-        for (auto &pir : promoIconRects) pir = {offsetW, offsetH, offsetW * 5, offsetH * 5};
-
-        for (int i = 0; i < nPieces; i++) {
-            // Determine path (dont even with the += it just stopped a warning about string append)
-            path += "../Resources/" + pieceNames[i] += "/" + pieceNames[i] += "_" + col[cIndex] + "_" + PIECE_STYLE + ".png";
-
-            // Fetch texture
-            if ((pieceTexture = IMG_LoadTexture(window.renderer, path.c_str())) == nullptr) {
-                std::string issue = "Failed to load " + pieceNames[i] + " icon for promoMenus";
+        // Draw icons
+        iconRect = {promoRect.w / 25, promoRect.h / 7, promoRect.w * 5/25, promoRect.h * 5/7};
+        Texture pieceIDs[4] = {WHITE_QUEEN, WHITE_ROOK, WHITE_BISHOP, WHITE_KNIGHT};
+        Rect rectIDs[4] = {Rect::PROMO_QUEEN, Rect::PROMO_ROOK, Rect::PROMO_BISHOP, Rect::PROMO_KNIGHT};
+        for (int id = 0; id < 4; id++) {
+            // fetch icon texture
+            if ((tempTexture = tm->FetchTexture(Texture(pieceIDs[id] + col + PIECE_STYLE.second))) == nullptr) {
+                std::string issue = "Failed to load icon for promoMenus";
                 LogError(issue, SDL_GetError(), false);
                 return false;
             }
 
-            promoIconRects[i].x += i * 6 * offsetW;
-            if (SDL_RenderCopy(window.renderer, pieceTexture, nullptr, &promoIconRects[i]) != 0) {
-                LogError("Failed to add icon texture to promoMenus", SDL_GetError(), false);
+            // draw icon
+            if (SDL_RenderCopy(window.renderer, tempTexture, nullptr, &iconRect) != 0) {
+                LogError("Failed to draw icon texture to promoMenus", SDL_GetError(), false);
                 return false;
             }
 
-            path = "";
+            // add iconRect to rectCollection, move to next icon position
+            rm->NewOrUpdateExisting(iconRect, rectIDs[id]);
+            iconRect.x += iconRect.w * 6/5;
         }
 
-        cIndex++;
+        // add promoMenu texture to texture collection
+        tm->UpdateTexture(promoTexture, (col == 0) ? PROMO_WHITE_COMPILED : PROMO_BLACK_COMPILED);
     }
 
     // Reset render target
     SDL_SetRenderTarget(window.renderer, nullptr);
 
-    // Reposition the promoMenus rect
-    promoMenuRect.x = menuRect.w + boardRect.w/2 - promoMenuRect.w/2;
-    promoMenuRect.y = boardRect.h/2 - promoMenuRect.h/2;
+    // Reposition the promoMenus rect to centre of boardRect
+    auto boardRect = rm->FetchResource(Rect::BOARD);
+    promoRect.x = boardRect.x + boardRect.w/2 - promoRect.w/2;
+    promoRect.y = boardRect.h/2 - promoRect.h/2;
 
-    printf("x : %d y : %d w : % d h : %d\n", promoMenuRect.x, promoMenuRect.y, promoMenuRect.w, promoMenuRect.h);
+    // update stored promoRect
+    rm->UpdateExistingResource(promoRect, Rect::PROMO_MENU);
 
     // success
     return true;
 }
 
 void Board::DisplayPromoMenu(Piece* _promotingPiece) {
-    auto displayMenu = promoMenus[(_promotingPiece->GetPieceInfoPtr()->colID == 'B') ? 0 : 1];
-    SDL_RenderCopy(window.renderer, displayMenu, nullptr, &promoMenuRect);
+    auto col = _promotingPiece->GetPieceInfoPtr()->colID == 'W' ?  PROMO_WHITE_COMPILED : PROMO_BLACK_COMPILED;
+    auto displayMenu = tm->FetchTexture(col);
+    auto rect = rm->FetchResource(Rect::PROMO_MENU);
+
+    SDL_RenderCopy(window.renderer, displayMenu, nullptr, &rect);
 }
 
 void Board::DisplayGameBoard() {
+    // temp texture var
+    SDL_Texture* texture;
+    SDL_Rect rect;
+
     // Display Board background
-    SDL_RenderCopy(window.renderer, boardTexture, nullptr, &boardRect);
-
-    // Display row labels
-    for (int r = 0; r < rows; r++) {
-        SDL_RenderCopy(window.renderer, row_label_textures[r], nullptr, &row_label_rects[r]);
-    }
-
-    // Display colID labels
-    for (int c = 0; c < columns; c++) {
-        SDL_RenderCopy(window.renderer, col_label_textures[c], nullptr, &col_label_rects[c]);
-    }
+    texture = tm->FetchTexture(BOARD_COMPILED);
+    rect = rm->FetchResource(Rect::BOARD);
+    SDL_RenderCopy(window.renderer, texture, nullptr, &rect);
 
     // display menu background
-    SDL_RenderCopy(window.renderer, boardBases[1], nullptr, &menuRect);
+    texture = tm->FetchTexture(BOARD_BASE_SECONDARY);
+    rect = rm->FetchResource(Rect::OPTIONS);
+    SDL_RenderCopy(window.renderer, texture, nullptr, &rect);
 
     // display game info background
-    SDL_RenderCopy(window.renderer, boardBases[1], nullptr, &gameInfoRect);
+    texture = tm->FetchTexture(BOARD_BASE_SECONDARY);
+    rect = rm->FetchResource(Rect::GAME_INFO);
+    SDL_RenderCopy(window.renderer, texture, nullptr, &rect);
 }
 
 std::string Board::GetPromoMenuInput() {
@@ -242,20 +262,46 @@ std::string Board::GetPromoMenuInput() {
     // no click made yet
     if (!mouse.IsUnheldActive()) return "noinput";
 
-    for (int irIndex = 0; irIndex < 4; irIndex++ ) {
-        SDL_Rect iconRect = promoIconRects[irIndex];
-        iconRect.x += promoMenuRect.x;
-        iconRect.y += promoMenuRect.y;
+    Rect rectIDs[4] = {Rect::PROMO_QUEEN, Rect::PROMO_ROOK, Rect::PROMO_BISHOP, Rect::PROMO_KNIGHT};
+    SDL_Rect promoMenuRect = rm->FetchResource(Rect::PROMO_MENU);
 
-        if (mouse.UnheldClick(iconRect)) {
-            printf("clicked on %s\n", pieceNames[irIndex].c_str());
-            return pieceNames[irIndex];
+    for (auto& rectID : rectIDs) {
+        auto rect = rm->FetchResource(rectID);
+        rect.x += promoMenuRect.x;
+        rect.y += promoMenuRect.y;
+
+        if (mouse.UnheldClick(rect)) {
+            std::string pieceName;
+            switch (rectID){
+                case Rect::PROMO_QUEEN: pieceName = "Queen"; break;
+                case Rect::PROMO_ROOK: pieceName = "Rook"; break;
+                case Rect::PROMO_BISHOP: pieceName = "Bishop"; break;
+                case Rect::PROMO_KNIGHT: pieceName = "Knight"; break;
+                default: break;
+            }
+
+            return pieceName;
         }
     }
 
     // click made, but not on menu. exit menu
     return "";
 }
+
+void Board::GetTileDimensions(int& _w, int& _h) const {
+    SDL_Rect boardRect = rm->FetchResource(Rect::BOARD);
+    int tileWidth = int((1 - boardBorder*2) * (float)boardRect.w / columns);
+    int tileHeight = int((1 - boardBorder*2) * (float)boardRect.h / rows);
+
+    _w = tileWidth;
+    _h = tileHeight;
+}
+
+void Board::GetMinDimensions(int& _w, int& _h) const {
+    _w = minBoardWidth + minInfoWidth + minMenuWidth;
+    _h = minBoardWidth;
+}
+
 
 
 void Board::GetRowsColumns(int &_rows, int &_cols) {
@@ -267,39 +313,39 @@ Pair<int> Board::GetRowsColumns() {
     return {rows, columns};
 }
 
-void Board::GetBoardBLPosition(int& x, int& y) const {
-    x = boardRect.x + boardRect.w/10;
-    y = boardRect.h * 9/10 - tileHeight;
+void Board::GetBoardBLPosition(int& _x, int& _y) const {
+    SDL_Rect boardRect = rm->FetchResource(Rect::BOARD);
+
+    _x = boardRect.x + int((double)boardRect.w * boardBorder);
+    _y = int((double)boardRect.h * (1-2*boardBorder));
 }
 
 void Board::GetTileRectFromPosition(SDL_Rect &rect, Position<char, int> position) const {
-    // set rect to originate from tl of the board's bottom left tile
+    // Get rect of a1
+    SDL_Rect boardRect = rm->FetchResource(Rect::BOARD);
     GetBoardBLPosition(rect.x, rect.y);
+    GetTileDimensions(rect.w, rect.h);
 
-    // now add the position values to the rect values
-    rect.x += (tileWidth * (position.x-'a'));
-    rect.y -= (tileWidth * (position.y - 1));
-    rect.w = tileWidth;
-    rect.h = tileHeight;
+    // now move x and y to position
+    rect.x += (rect.w * (std::tolower(position.x)-'a'));
+    rect.y -= (rect.h * (position.y - 1));
 }
 
-void Board::GetBorderedRectFromPosition(SDL_Rect &rect, Position<char, int> position) const {
-    // set rect to originate from tl of the board's bottom left tile
-    GetBoardBLPosition(rect.x, rect.y);
+void Board::GetBorderedRectFromPosition(SDL_Rect &_rect, Position<char, int> _position) const {
+    // Get rect of a tile on a position without border
+    GetTileDimensions(_rect.w, _rect.h);
+    GetTileRectFromPosition(_rect, _position);
 
-    // now add the position values to the rect values
-    rect.x += (tileWidth * (position.x-'a'));
-    rect.y -= (tileWidth * (position.y - 1));
-    rect.w = tileWidth;
-    rect.h = tileHeight;
+    int bWidth = int((double)_rect.w * tile_borderWidth);
+    int bHeight = int((double)_rect.h * tile_borderHeight);
 
     // now apply 10% border to the rect
-    rect.w = int((float)rect.w * (1 - (tile_borderWidth * 2)));
-    rect.h = int((float)rect.h * (1 - (tile_borderHeight * 2)));
+    _rect.w -= 2 * bWidth;
+    _rect.h -= 2 * bHeight;
 
-    // now move the tl of rect by 10% of tileWidth/tileHeight to centre the rect
-    rect.x += int((float)tileWidth*tile_borderWidth);
-    rect.y += int((float)tileHeight*tile_borderHeight);
+    // now move the tl of _rect by 10% of tileWidth/tileHeight to centre the _rect
+    _rect.x += bWidth;
+    _rect.y += bHeight;
 }
 
 /*
@@ -314,38 +360,36 @@ void Board::FillToBounds(int _w, int _h) {
      */
 
     double ratio;
-    int sumMinWidth = minBoardSize + minMenuWidth + minInfoWidth;
+    int sumMinWidth = minBoardWidth + minMenuWidth + minInfoWidth;
 
     // Determine size of the main board and ensure height of screen is not exceeded
-    ratio = (double)minBoardSize / sumMinWidth;
-    boardRect.w = int(_w * ratio);
-    if (boardRect.w > _h) {
-        boardRect.w = _h;
-        ratio = (double)boardRect.w / minBoardSize;
+
+    // Ensure height of screen isn't exceeded
+    ratio = (double)minBoardWidth / sumMinWidth;
+    int boardHeight = int(_w * ratio);
+    if (boardHeight > _h) boardHeight = _h;
+    ratio = (double)boardHeight / minBoardWidth;
+
+    // Resize rects
+    Rect rectIDs[3] {Rect::OPTIONS, Rect::BOARD, Rect::GAME_INFO};
+    int minWidth[3] {minMenuWidth, minBoardWidth, minInfoWidth};
+    for (int id = 0; id < 3; id++) {
+        auto rect = rm->FetchResource(rectIDs[id]);
+        rect.h = boardHeight;
+        rect.w = int(minWidth[id] * ratio);
+
+        // Reposition rects due to new sizes
+        rect.y = 0;
+        rect.x = 0;
+
+        if (id > 0) {
+            auto prevRect = rm->FetchResource(rectIDs[id-1]);
+            rect.x = prevRect.x + prevRect.w;
+        }
+
+        // Update stored rect
+        rm->UpdateExistingResource(rect, rectIDs[id]);
     }
-    boardRect.h = boardRect.w;
-
-    // Determine size of left menu board
-    menuRect.h = boardRect.h;
-    ratio = (double)menuRect.h / minBoardSize;
-    menuRect.w = int(minMenuWidth * ratio);
-
-    // Determine size of right game info board
-    gameInfoRect.h = boardRect.h;
-    ratio = (double)gameInfoRect.h / minBoardSize;
-    gameInfoRect.w = int(minInfoWidth * ratio);
-
-    /*
-     * Reposition rects due to new sizes
-     */
-
-    // menuRect remains the same at 0,0
-    boardRect.x = menuRect.w;
-    gameInfoRect.x = boardRect.x + boardRect.w;
-
-    // now update the TileWidth, TileHeight values
-    tileWidth = int(0.8 * (float)boardRect.w / columns);
-    tileHeight = int(0.8 * (float)boardRect.h / rows);
 }
 
 /*
@@ -383,7 +427,7 @@ void Board::ClearExcessGameFiles() {
     for (const auto& gameData : std::filesystem::directory_iterator(gameDataDirPath)) {
         AsymPair<std::string, time_t> pathTime;
         std::string pathTimeString;
-        tm tm {};
+        struct tm structtm {};
 
         pathTime.a = gameData.path().string();
 
@@ -395,12 +439,12 @@ void Board::ClearExcessGameFiles() {
         if (pathTimeString.length() >= timeStringFormat.size() - 1) {
             pathTimeString.erase(timeStringFormat.size() -1, std::string::npos);
 
-            // now turn into tm, >> is highlighted as an error yet works???
+            // now turn into structtm, >> is highlighted as an error yet works???
             std::istringstream ss(pathTimeString);
-            ss >> std::get_time(&tm, timeFormat.c_str());
+            ss >> std::get_time(&structtm, timeFormat.c_str());
 
             // turn into time_t which can be stored then compared
-            pathTime.b = mktime(&tm);
+            pathTime.b = mktime(&structtm);
 
         } else {
             // default to time 0
@@ -411,7 +455,8 @@ void Board::ClearExcessGameFiles() {
     }
 
     // sort by time oldest -> newest
-    std::sort(pathTimes.begin(), pathTimes.end(), [&](const AsymPair<std::string, time_t>& pathTimeA, const AsymPair<std::string, time_t>& pathTimeB){
+    std::sort(pathTimes.begin(), pathTimes.end(),
+              [&](const AsymPair<std::string, time_t>& pathTimeA,const AsymPair<std::string, time_t>& pathTimeB){
         return (pathTimeA.b < pathTimeB.b);
     });
 
@@ -499,7 +544,8 @@ bool Board::WriteStartPositionsToFile(const std::vector<Piece *> &_allPieces) {
 
     for (auto piece : _allPieces) {
         Piece_Info* pInfo = piece->GetPieceInfoPtr();
-        std::string pInfoStr = pInfo->color + "," + pInfo->name + "," + pInfo->gamepos.x + "," + std::to_string(pInfo->gamepos.y);
+        std::string pInfoStr; pInfoStr.append(&pInfo->colID);
+        pInfoStr += "," + pInfo->name + "," + pInfo->gamepos.x + "," + std::to_string(pInfo->gamepos.y);
         spFile << pInfoStr << std::endl;
     }
 

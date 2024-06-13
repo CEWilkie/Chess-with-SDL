@@ -4,9 +4,8 @@
 
 #include "src_headers/King.h"
 
-King::King(const std::string &_name, const std::string &_color, Position<char, int> _gamepos)
-: Piece(_name, _color,_gamepos) {
-    info->pieceID = 'K';
+King::King(const std::string &_name, char _colID, Position<char, int> _gamepos)
+: Piece(_name, _colID,_gamepos) {
 }
 
 void King::FetchMoves(const std::vector<Piece *> &_teamPieces, const std::vector<Piece *> &_oppPieces,
@@ -15,7 +14,7 @@ void King::FetchMoves(const std::vector<Piece *> &_teamPieces, const std::vector
      * King moves are in the 8 tiles surrounding him
      * [_][_][_][_][_]
      * [_][a][a][a][_]
-     * [_][a][K][a][_]
+     * [_][a][Key][a][_]
      * [_][a][a][a][_]
      * [_][_][_][_][_]
      * However, he cannot enter a position where he is being checked (targeted by another piece)

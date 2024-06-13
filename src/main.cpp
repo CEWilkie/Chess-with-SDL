@@ -9,7 +9,7 @@
 #include <fstream>
 
 #include "src_headers/GlobalSource.h"
-#include "src_headers/GlobalVars.h"
+#include "src_headers/GlobalResources.h"
 #include "src_headers/Board.h"
 #include "src_headers/Piece.h"
 #include "src_headers/SelectedPiece.h"
@@ -83,7 +83,7 @@ int main(int argc, char** argv) {
     }
 
     // Set Window Background
-    window.background = IMG_LoadTexture(window.renderer, "../Resources/GameBoard/Green_Background.png");
+    window.background = IMG_LoadTexture(window.renderer, "../Resources/Wood/Green_Background.png");
 
 //    // fetch device screen dimensions and apply border sizes to w, h
 //    if(SDL_GetDisplayUsableBounds(0, &window.currentRect) != 0) {
@@ -99,6 +99,14 @@ int main(int argc, char** argv) {
 
     // clean up any other errors which may appear before deliberate error checking
     SDL_ClearError();
+
+    /*
+     * CREATE TEXTURES
+     */
+
+    InitFonts();
+    InitTextures();
+    SetStyles();
 
     /*
      * CONFIG FILES
@@ -138,6 +146,7 @@ int main(int argc, char** argv) {
     // Read standard board from file
     std::fstream boardStandardFile("../RequiredFiles/BasicSetup.csv");
     std::string pieceString;
+
     std::vector<std::string> pieceElements;
     char div = ',';
     uint64_t splitpos;
@@ -154,22 +163,23 @@ int main(int argc, char** argv) {
         // construct Piece from elements taken from file
         Piece* newPiece = nullptr;
         if (pieceElements[1] == "Pawn") {
-            newPiece = new Piece("Pawn", pieceElements[0], {(char)pieceElements[2][0], std::stoi(pieceElements[3])});
+            newPiece = new Piece("Pawn", 'W', {});
+            newPiece = new Piece("Pawn", pieceElements[0][0], {(char)pieceElements[2][0], std::stoi(pieceElements[3])});
         }
         if (pieceElements[1] == "Knight") {
-            newPiece = new Knight("Knight", pieceElements[0], {(char)pieceElements[2][0], std::stoi(pieceElements[3])});
+            newPiece = new Knight("Knight", pieceElements[0][0], {(char)pieceElements[2][0], std::stoi(pieceElements[3])});
         }
         if (pieceElements[1] == "Bishop") {
-            newPiece = new Bishop("Bishop", pieceElements[0], {(char)pieceElements[2][0], std::stoi(pieceElements[3])});
+            newPiece = new Bishop("Bishop", pieceElements[0][0], {(char)pieceElements[2][0], std::stoi(pieceElements[3])});
         }
         if (pieceElements[1] == "Rook") {
-            newPiece = new Rook("Rook", pieceElements[0], {(char)pieceElements[2][0], std::stoi(pieceElements[3])});
+            newPiece = new Rook("Rook", pieceElements[0][0], {(char)pieceElements[2][0], std::stoi(pieceElements[3])});
         }
         if (pieceElements[1] == "King") {
-            newPiece = new King("King", pieceElements[0], {(char)pieceElements[2][0], std::stoi(pieceElements[3])});
+            newPiece = new King("King", pieceElements[0][0], {(char)pieceElements[2][0], std::stoi(pieceElements[3])});
         }
         if (pieceElements[1] == "Queen") {
-            newPiece = new Queen("Queen", pieceElements[0], {(char)pieceElements[2][0], std::stoi(pieceElements[3])});
+            newPiece = new Queen("Queen", pieceElements[0][0], {(char)pieceElements[2][0], std::stoi(pieceElements[3])});
         }
 
         if (newPiece != nullptr) {
@@ -183,7 +193,6 @@ int main(int argc, char** argv) {
 
     printf("CONSTRUCTED %zu WHITE PIECES, %zu BLACK PIECES, %zu TOTAL PIECES\n",
            white_pieces.size(), black_pieces.size(), all_pieces.size());
-
 
     board.WriteStartPositionsToFile(all_pieces);
 
@@ -294,16 +303,16 @@ int main(int argc, char** argv) {
                     Piece_Info* pi = piece->GetPieceInfoPtr();
 
                     if (promoteTo == "Knight") {
-                        promotedPiece = new Knight("Knight", pi->color, pi->gamepos);
+                        promotedPiece = new Knight("Knight", pi->colID, pi->gamepos);
                     }
                     else if (promoteTo == "Bishop") {
-                        promotedPiece = new Bishop("Bishop", pi->color, pi->gamepos);
+                        promotedPiece = new Bishop("Bishop", pi->colID, pi->gamepos);
                     }
                     else if (promoteTo == "Rook") {
-                        promotedPiece = new Rook("Rook", pi->color, pi->gamepos);
+                        promotedPiece = new Rook("Rook", pi->colID, pi->gamepos);
                     }
                     else if (promoteTo == "Queen"){
-                        promotedPiece = new Queen("Queen", pi->color, pi->gamepos);
+                        promotedPiece = new Queen("Queen", pi->colID, pi->gamepos);
                     }
 
                     if (promotedPiece != nullptr) {

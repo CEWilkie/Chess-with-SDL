@@ -4,9 +4,9 @@
 
 #include "src_headers/Knight.h"
 
-Knight::Knight(const std::string& _name, const std::string& _color, Position<char, int> _gamepos)
-: Piece(_name, _color, _gamepos) {
-        info->pieceID = 'N';
+Knight::Knight(const std::string& _name, char _colID, Position<char, int> _gamepos)
+: Piece(_name, _colID, _gamepos) {
+
 }
 
 void Knight::FetchMoves(const std::vector<Piece *> &_teamPieces, const std::vector<Piece *> &_oppPieces,
@@ -15,7 +15,7 @@ void Knight::FetchMoves(const std::vector<Piece *> &_teamPieces, const std::vect
      * Fetches the moves for
      *  [_][a][_][a][_]
      *  [a][_][_][_][a]
-     *  [_][_][K][_][_]
+     *  [_][_][Key][_][_]
      *  [a][_][_][_][a]
      *  [_][a][_][a][_]
      *  where a marks an empty tile or capturable piece

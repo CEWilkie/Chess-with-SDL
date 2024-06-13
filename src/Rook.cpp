@@ -4,8 +4,8 @@
 
 #include "src_headers/Rook.h"
 
-Rook::Rook(const std::string &_name, const std::string &_color, Position<char, int> _gamepos)
-: Piece(_name, _color,_gamepos) {
+Rook::Rook(const std::string &_name, char _colID, Position<char, int> _gamepos)
+: Piece(_name, _colID,_gamepos) {
     info->pieceID = 'R';
 }
 
@@ -27,7 +27,7 @@ void Rook::FetchMoves(const std::vector<Piece *> &_teamPieces, const std::vector
     int maxRows, maxCols, dr = 0, dc = 0;
     Board::GetRowsColumns(maxRows, maxCols);
 
-    // repeat 4 times for each of the diagonal directions (order T -> R -> B -> L)
+    // repeat 4 times for each of the diagonal directions (order ResType -> R -> B -> L)
     for (int direction = 0; direction < 4; direction++) {
         // flip direction to negative value on B, L directions
         int dir = (direction > 1) ? -1 : 1;
