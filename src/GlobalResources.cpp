@@ -49,6 +49,8 @@ bool InitTextures() {
 
     // Create additional board textures
     tm->NewTexture(nullptr, BOARD_COMPILED);
+    tm->NewTexture(nullptr, PROMO_BLACK_COMPILED);
+    tm->NewTexture(nullptr, PROMO_WHITE_COMPILED);
 
     /*
      * Construct Menus Textures

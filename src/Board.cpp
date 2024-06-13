@@ -146,7 +146,7 @@ bool Board::CreatePromoMenuTexture() {
      */
 
     // Load textures
-    tm->OpenTexture(PROMO_BASE);
+    tm->OpenTexture(Texture(PROMO_BASE+BOARD_STYLE.second));
     for (int c = 0; c < 2; c++) {
         tm->OpenTexture(Texture(WHITE_QUEEN+PIECE_STYLE.second+c));
         tm->OpenTexture(Texture(WHITE_ROOK+PIECE_STYLE.second+c));
@@ -220,6 +220,15 @@ bool Board::CreatePromoMenuTexture() {
 
     // update stored promoRect
     rm->UpdateExistingResource(promoRect, Rect::PROMO_MENU);
+
+    // Load textures
+    tm->CloseTexture(Texture(PROMO_BASE+BOARD_STYLE.second));
+    for (int c = 0; c < 2; c++) {
+        tm->CloseTexture(Texture(WHITE_QUEEN+PIECE_STYLE.second+c));
+        tm->CloseTexture(Texture(WHITE_ROOK+PIECE_STYLE.second+c));
+        tm->CloseTexture(Texture(WHITE_BISHOP+PIECE_STYLE.second+c));
+        tm->CloseTexture(Texture(WHITE_KNIGHT+PIECE_STYLE.second+c));
+    }
 
     // success
     return true;
