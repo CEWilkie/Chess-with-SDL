@@ -18,6 +18,7 @@
 #include "src_headers/Rook.h"
 #include "src_headers/Queen.h"
 #include "src_headers/King.h"
+#include "src_headers/AppScreen.h"
 
 int EnsureWindowSize(Board* _board) {
     // Fetch rect of current window properties
@@ -204,6 +205,9 @@ int main(int argc, char** argv) {
     auto oppptr = &black_pieces;
     SelectedPiece selectedPiece {};
 
+    Menu menu({200, 200}, {300, 125}, "HI!");
+    menu.CreateTextures();
+
     bool running = true;
     bool eot = false;
     bool allTasksComplete = true;
@@ -229,6 +233,9 @@ int main(int argc, char** argv) {
             piece->DisplayPiece();
             piece->DisplayMoves(board);
         }
+
+        menu.Display();
+        menu.CloseClicked();
 
         /*
          * CHECKMATE + STALEMATE CHECKING
@@ -264,10 +271,10 @@ int main(int argc, char** argv) {
                 running = false;
             }
             if (event.type == SDL_MOUSEBUTTONDOWN) {
-                mouse.UpdateState(true);
+                mouse.MouseDown(true);
             }
             if (event.type == SDL_MOUSEBUTTONUP) {
-                mouse.UpdateState(false);
+                mouse.MouseDown(false);
             }
         }
 
@@ -375,6 +382,8 @@ int main(int argc, char** argv) {
             for (Piece* piece : black_pieces) {
                 piece->GetRectOfBoardPosition(board);
             }
+
+            menu.CreateTextures();
         }
 
 

@@ -9,7 +9,11 @@
  */
 
 bool InitFonts() {
-    auto fm = FontManager::GetInstance();
+    // Temp vars
+
+    /*
+     * Construct fonts
+     */
 
     fm->CreateNewFont("../Resources/Fonts/CF/TCFR.ttf", 100, Font::CONFESSION);
 
@@ -17,8 +21,6 @@ bool InitFonts() {
 }
 
 bool InitTextures() {
-    auto tm = TextureManager::GetInstance();
-
     // Temp vars
     std::string dirPath;
     int dirCount;
@@ -35,14 +37,14 @@ bool InitTextures() {
         if (!board.is_directory()) continue;
 
         // Create new style info
-        BOARD_STYLES[dirCount] = {board.path().filename().string(), (Texture)dirCount};
+        BOARD_STYLES[dirCount] = {board.path().filename().string(), (TextureID)dirCount};
 
         // Create the styled Board Textures
-        tm->NewTexture(board.path().string() + "/Board_Base.png", Texture(BOARD_BASE + BOARD_STYLE.second));
-        tm->NewTexture(board.path().string() + "/Secondary_Base.png", Texture(BOARD_BASE_SECONDARY + BOARD_STYLE.second));
-        tm->NewTexture(board.path().string() + "/White_Tile.png", Texture(WHITE_TILE + BOARD_STYLE.second));
-        tm->NewTexture(board.path().string() + "/Black_Tile.png", Texture(BLACK_TILE + BOARD_STYLE.second));
-        tm->NewTexture(board.path().string() + "/Promotion_Menu.png", Texture(PROMO_BASE + BOARD_STYLE.second));
+        tm->NewTexture(board.path().string() + "/Board_Base.png", TextureID(BOARD_BASE + BOARD_STYLE.second));
+        tm->NewTexture(board.path().string() + "/Secondary_Base.png", TextureID(BOARD_BASE_SECONDARY + BOARD_STYLE.second));
+        tm->NewTexture(board.path().string() + "/White_Tile.png", TextureID(WHITE_TILE + BOARD_STYLE.second));
+        tm->NewTexture(board.path().string() + "/Black_Tile.png", TextureID(BLACK_TILE + BOARD_STYLE.second));
+        tm->NewTexture(board.path().string() + "/Promotion_Menu.png", TextureID(PROMO_BASE + BOARD_STYLE.second));
 
         dirCount++;
     }
@@ -53,8 +55,16 @@ bool InitTextures() {
     tm->NewTexture(nullptr, PROMO_WHITE_COMPILED);
 
     /*
+     * Construct Button Textures
+     */
+
+    tm->NewTexture("../Resources/Menus/ButtonSheet.png", {10, 10}, BUTTON_SHEET);
+
+    /*
      * Construct Menus Textures
      */
+
+    tm->NewTexture("../Resources/Menus/MenuBaseSheet.png", {10, 10}, MENU_SHEET);
 
     // Produce texture info for the .png files in Resources/Menus
 
@@ -71,21 +81,21 @@ bool InitTextures() {
         if (piece.path().filename() == "Piece") continue;
 
         // Create style info
-        PIECE_STYLES[dirCount] = {piece.path().filename().string(), (Texture)dirCount};
+        PIECE_STYLES[dirCount] = {piece.path().filename().string(), (TextureID)dirCount};
 
         // Create styled piece textures
-        tm->NewTexture(piece.path().string() + "/King/King_White.png", Texture(WHITE_KING + PIECE_STYLE.second));
-        tm->NewTexture(piece.path().string() + "/King/King_Black.png", Texture(BLACK_KING + PIECE_STYLE.second));
-        tm->NewTexture(piece.path().string() + "/Queen/Queen_White.png", Texture(WHITE_QUEEN + PIECE_STYLE.second));
-        tm->NewTexture(piece.path().string() + "/Queen/Queen_Black.png", Texture(BLACK_QUEEN + PIECE_STYLE.second));
-        tm->NewTexture(piece.path().string() + "/Rook/Rook_White.png", Texture(WHITE_ROOK + PIECE_STYLE.second));
-        tm->NewTexture(piece.path().string() + "/Rook/Rook_Black.png", Texture(BLACK_ROOK + PIECE_STYLE.second));
-        tm->NewTexture(piece.path().string() + "/Bishop/Bishop_White.png", Texture(WHITE_BISHOP + PIECE_STYLE.second));
-        tm->NewTexture(piece.path().string() + "/Bishop/Bishop_Black.png", Texture(BLACK_BISHOP + PIECE_STYLE.second));
-        tm->NewTexture(piece.path().string() + "/Knight/Knight_White.png", Texture(WHITE_KNIGHT + PIECE_STYLE.second));
-        tm->NewTexture(piece.path().string() + "/Knight/Knight_Black.png", Texture(BLACK_KNIGHT + PIECE_STYLE.second));
-        tm->NewTexture(piece.path().string() + "/Pawn/Pawn_White.png", Texture(WHITE_PAWN + PIECE_STYLE.second));
-        tm->NewTexture(piece.path().string() + "/Pawn/Pawn_Black.png", Texture(BLACK_PAWN + PIECE_STYLE.second));
+        tm->NewTexture(piece.path().string() + "/King/King_White.png", TextureID(WHITE_KING + PIECE_STYLE.second));
+        tm->NewTexture(piece.path().string() + "/King/King_Black.png", TextureID(BLACK_KING + PIECE_STYLE.second));
+        tm->NewTexture(piece.path().string() + "/Queen/Queen_White.png", TextureID(WHITE_QUEEN + PIECE_STYLE.second));
+        tm->NewTexture(piece.path().string() + "/Queen/Queen_Black.png", TextureID(BLACK_QUEEN + PIECE_STYLE.second));
+        tm->NewTexture(piece.path().string() + "/Rook/Rook_White.png", TextureID(WHITE_ROOK + PIECE_STYLE.second));
+        tm->NewTexture(piece.path().string() + "/Rook/Rook_Black.png", TextureID(BLACK_ROOK + PIECE_STYLE.second));
+        tm->NewTexture(piece.path().string() + "/Bishop/Bishop_White.png", TextureID(WHITE_BISHOP + PIECE_STYLE.second));
+        tm->NewTexture(piece.path().string() + "/Bishop/Bishop_Black.png", TextureID(BLACK_BISHOP + PIECE_STYLE.second));
+        tm->NewTexture(piece.path().string() + "/Knight/Knight_White.png", TextureID(WHITE_KNIGHT + PIECE_STYLE.second));
+        tm->NewTexture(piece.path().string() + "/Knight/Knight_Black.png", TextureID(BLACK_KNIGHT + PIECE_STYLE.second));
+        tm->NewTexture(piece.path().string() + "/Pawn/Pawn_White.png", TextureID(WHITE_PAWN + PIECE_STYLE.second));
+        tm->NewTexture(piece.path().string() + "/Pawn/Pawn_Black.png", TextureID(BLACK_PAWN + PIECE_STYLE.second));
 
         dirCount++;
     }

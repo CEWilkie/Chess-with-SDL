@@ -17,12 +17,13 @@
  * Temp defs
  */
 
-enum Texture : int;
+enum TextureID : int;
 enum class Font;
 
 /*
  * Generic ResourceManager
- * used locally within classes to house various resources
+ * For use within a local scope to act as a dictionary. Each unique Key is mapped to a Resource, the types being
+ * defined when the ResourceManager is constructed.
  */
 
 template<class Key, class Resource>
@@ -95,16 +96,17 @@ class ResourceManager {
 
 
 /*
- * Global Texture Manager
+ * Global TextureID Manager
  * used globally to house all textures and relevant information for constructing them
  */
 
 struct TextureInfo {
     std::string path {};
+    std::pair<int, int> grid {1, 1};
     unsigned int count = 0;
 };
 
-class TextureManager : protected ResourceManager<Texture, TextureInfo> {
+class TextureManager : protected ResourceManager<TextureID, TextureInfo> {
     private:
         // Constructing Singleton instance
         static TextureManager* rmInstance;
@@ -112,11 +114,11 @@ class TextureManager : protected ResourceManager<Texture, TextureInfo> {
         ~TextureManager();
 
         // unordered map object to store texture resources in
-        std::unordered_map<Texture, SDL_Texture*>* uoTextureMap;
+        std::unordered_map<TextureID, SDL_Texture*>* uoTextureMap;
 
         // Loading and Unloading textures
-        bool LoadTexture(Texture _textureID);
-        bool UnloadTexture(Texture _textureID);
+        bool LoadTexture(TextureID _textureID);
+        bool UnloadTexture(TextureID _textureID);
 
         // Loading specific texture style
 
@@ -126,19 +128,24 @@ class TextureManager : protected ResourceManager<Texture, TextureInfo> {
         TextureManager(const TextureManager&) = delete;
         TextureManager& operator=(const TextureManager&) = delete;
 
-        // Texture management
-        bool NewTexture(const std::string &_texturePath, Texture _textureID);
-        bool NewTexture(SDL_Texture* _texture, Texture _textureID);
-        bool UpdateTexture(const std::string& _texturePath, Texture _textureID);
-        bool UpdateTexture(SDL_Texture* _texture, Texture _textureID);
-        SDL_Texture* OpenTexture(Texture _textureID);
-        bool CloseTexture(Texture _textureID);
-        SDL_Texture* FetchTexture(Texture _textureID);
-        bool DestroyTexture(Texture _textureID);
-        bool TextureExists(Texture _textureID);
+        // TextureID management
+        bool NewTexture(const std::string &_texturePath, TextureID _textureID);
+        bool NewTexture(const std::string &_texturePath, std::pair<int, int> _grid, TextureID _textureID);
+        bool NewTexture(SDL_Texture* _texture, TextureID _textureID);
+
+        bool UpdateTexture(const std::string& _texturePath, TextureID _textureID);
+        bool UpdateTexture(SDL_Texture* _texture, TextureID _textureID);
+        bool DestroyTexture(TextureID _textureID);
+
+        SDL_Texture* OpenTexture(TextureID _textureID);
+        bool CloseTexture(TextureID _textureID);
+        SDL_Texture* FetchTexture(TextureID _textureID);
+        TextureInfo FetchTextureInfo(TextureID _textureID);
+
+        bool TextureExists(TextureID _textureID);
 };
 
-
+inline TextureManager* tm = TextureManager::GetInstance();
 
 
 
@@ -181,5 +188,7 @@ class FontManager : protected ResourceManager<Font, FontInfo> {
         bool CloseFont(Font _fontID);
         bool DestroyFont();
 };
+
+inline FontManager* fm = FontManager::GetInstance();
 
 #endif //CHESS_WITH_SDL_RESOURCEMANAGERS_H

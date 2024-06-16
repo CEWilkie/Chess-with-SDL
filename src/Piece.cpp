@@ -10,8 +10,8 @@ Piece::Piece(const std::string& _name, char _colID, Position<char, int> _gamepos
     if (_name != "Pawn") info->pieceID = _name[0];
     if (_name == "Knight") info->pieceID = 'N';
 
-    // Load Texture for piece
-    Texture t;
+    // Load TextureID for piece
+    TextureID t;
     switch (info->pieceID) {
         case 'K': t = WHITE_KING; break;
         case 'Q': t = WHITE_QUEEN; break;
@@ -20,7 +20,7 @@ Piece::Piece(const std::string& _name, char _colID, Position<char, int> _gamepos
         case 'N': t = WHITE_KNIGHT; break;
         default: t = WHITE_PAWN; break;
     }
-    info->textureID = Texture(t + (info->colID == 'W' ? 0 : 1) + PIECE_STYLE.second);
+    info->textureID = TextureID(t + (info->colID == 'W' ? 0 : 1) + PIECE_STYLE.second);
     tm->OpenTexture(info->textureID);
 
     // Load texture for move display

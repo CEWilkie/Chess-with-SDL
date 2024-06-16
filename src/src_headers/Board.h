@@ -47,10 +47,6 @@ class Board{
         const int minMenuWidth = 150;
         const int minInfoWidth = 300;
 
-        // Global resource manager pointers
-        TextureManager* tm = TextureManager::GetInstance();
-        FontManager* fm = FontManager::GetInstance();
-
         // Local resource manager pointers
         enum class Rect;
         ResourceManager<Rect, SDL_Rect>* rm = new ResourceManager<Rect, SDL_Rect>;

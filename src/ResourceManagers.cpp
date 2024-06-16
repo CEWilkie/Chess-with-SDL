@@ -5,66 +5,50 @@
 #include "src_headers/ResourceManagers.h"
 
 TextureManager* TextureManager::rmInstance = TextureManager::GetInstance();
-FontManager* FontManager::fmInstance = FontManager::GetInstance();
-
-/*
- * Resource Manager: definitions
- */
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-/*
- * TextureManager : creating a singleton instance
- */
 
 TextureManager* TextureManager::GetInstance() {
     if (!rmInstance) rmInstance = new TextureManager;
     return rmInstance;
 }
 
-TextureManager::TextureManager() : ResourceManager<Texture, TextureInfo>(){
-    uoTextureMap = new std::unordered_map<Texture, SDL_Texture*>;
+TextureManager::TextureManager() : ResourceManager<TextureID, TextureInfo>(){
+    uoTextureMap = new std::unordered_map<TextureID, SDL_Texture*>;
 }
 
 TextureManager::~TextureManager() = default;
 
 /*
- * Texture Manager definitions
+ * TextureID Manager definitions
  */
 
-bool TextureManager::LoadTexture(Texture _textureID) {
+bool TextureManager::LoadTexture(TextureID _textureID) {
     // Ensure textureID exists
-    if (uoTextureMap->count(_textureID) == 0) return false;
-    if (uoResourceMap->count(_textureID) == 0) return false;
+    if (!TextureExists(_textureID)) return false;
 
-    if ((*uoTextureMap)[_textureID] == nullptr && !(*uoResourceMap)[_textureID].path.empty()) {
-        SDL_Texture* texture = IMG_LoadTexture(window.renderer, (*uoResourceMap)[_textureID].path.c_str());
-        if (texture == nullptr) {
-            std::string issue = "Failed to load texture: " + (*uoResourceMap)[_textureID].path;
-            LogError(issue,SDL_GetError(), false);
-            return false;
-        }
+    // If the path is empty, or the texture is not null, consider the texture to already be loaded
+    if ((*uoResourceMap)[_textureID].path.empty()) return true;
+    if ((*uoTextureMap)[_textureID] != nullptr) return true;
 
-        (*uoTextureMap)[_textureID] = texture;
+    // Load texture
+    SDL_Texture* texture = IMG_LoadTexture(window.renderer, (*uoResourceMap)[_textureID].path.c_str());
+    if (texture == nullptr) {
+        std::string issue = "Failed to load texture from path " + (*uoResourceMap)[_textureID].path;
+        LogError(issue,SDL_GetError(), false);
+        return false;
     }
 
+    (*uoTextureMap)[_textureID] = texture;
     return true;
 }
 
-bool TextureManager::UnloadTexture(Texture _textureID) {
-    if (uoTextureMap->count(_textureID) != 1) return false;
+bool TextureManager::UnloadTexture(TextureID _textureID) {
+    // Ensure textureID exists
+    if (!TextureExists(_textureID)) return false;
 
+    // If the path is empty, texture cannot be recreated. Do not unload
+    if ((*uoResourceMap)[_textureID].path.empty()) return false;
+
+    // Unload texture if not already unloaded and set to nullptr;
     if ((*uoTextureMap)[_textureID] != nullptr) {
         SDL_DestroyTexture((*uoTextureMap)[_textureID]);
         (*uoTextureMap)[_textureID] = nullptr;
@@ -73,43 +57,57 @@ bool TextureManager::UnloadTexture(Texture _textureID) {
     return true;
 }
 
-bool TextureManager::NewTexture(const std::string &_texturePath, Texture _textureID) {
+bool TextureManager::NewTexture(const std::string &_texturePath, TextureID _textureID) {
     // Ensure textureInfo does not already exist
-    if (uoResourceMap->count(_textureID) != 1) {
-        (*uoResourceMap)[_textureID].path = _texturePath;
-    }
+    if (TextureExists(_textureID)) return false;
 
-    // Does not create the texture, only assigns the value to nullptr;
+    // set texture to nullptr, and store info
+    (*uoResourceMap)[_textureID] = {_texturePath};
     (*uoTextureMap)[_textureID] = nullptr;
     return true;
 }
 
-bool TextureManager::NewTexture(SDL_Texture *_texture, Texture _textureID) {
+bool TextureManager::NewTexture(const std::string &_texturePath, std::pair<int, int> _grid, TextureID _textureID) {
+    // Ensure textureInfo does not already exist
+    if (TextureExists(_textureID)) return false;
+
+    // set texture to nullptr, and store info
+    (*uoResourceMap)[_textureID] = {_texturePath, _grid};
+    (*uoTextureMap)[_textureID] = nullptr;
+    return true;
+}
+
+bool TextureManager::NewTexture(SDL_Texture *_texture, TextureID _textureID) {
     // Ensure texture does not already exist
-    if (uoResourceMap->count(_textureID) > 0) return false;
+    if (TextureExists(_textureID)) return false;
 
-    (*uoResourceMap)[_textureID] = {""};
+    // no info to store, set texture pointer
+    (*uoResourceMap)[_textureID] = {};
     (*uoTextureMap)[_textureID] = _texture;
     return true;
 }
 
-bool TextureManager::UpdateTexture(SDL_Texture *_texture, Texture _textureID) {
-    // Ensure texture exists
-    if (uoResourceMap->count(_textureID) == 0) return false;
+bool TextureManager::UpdateTexture(SDL_Texture *_texture, TextureID _textureID) {
+    // Ensure texture does already exist
+    if (!TextureExists(_textureID)) return false;
 
     (*uoTextureMap)[_textureID] = _texture;
     return true;
 }
 
-bool TextureManager::UpdateTexture(const std::string &_texturePath, Texture _textureID) {
-    // Ensure texture exists
-    if (uoResourceMap->count(_textureID) == 0) return false;
+bool TextureManager::UpdateTexture(const std::string &_texturePath, TextureID _textureID) {
+    // Ensure texture does already exist
+    if (!TextureExists(_textureID)) return false;
 
     (*uoResourceMap)[_textureID].path = _texturePath;
     return true;
 }
 
-SDL_Texture* TextureManager::OpenTexture(Texture _textureID) {
+bool TextureManager::DestroyTexture(TextureID _textureID) {
+    return uoTextureMap->erase(_textureID) > 0;
+}
+
+SDL_Texture* TextureManager::OpenTexture(TextureID _textureID) {
     // Check if texture does not exist
     if (uoTextureMap->count(_textureID) != 1) {
         return nullptr;
@@ -121,11 +119,9 @@ SDL_Texture* TextureManager::OpenTexture(Texture _textureID) {
 
 }
 
-bool TextureManager::CloseTexture(Texture _textureID) {
-    // check if texture does not exist
-    if (uoTextureMap->count(_textureID) != 1) {
-        return false;
-    }
+bool TextureManager::CloseTexture(TextureID _textureID) {
+    // Ensure texture does already exist
+    if (!TextureExists(_textureID)) return false;
 
     if (((*uoResourceMap)[_textureID].count--) <= 0) {
         (*uoResourceMap)[_textureID].count = 0;
@@ -135,27 +131,31 @@ bool TextureManager::CloseTexture(Texture _textureID) {
     return true;
 }
 
-SDL_Texture* TextureManager::FetchTexture(Texture _textureID) {
+SDL_Texture* TextureManager::FetchTexture(TextureID _textureID) {
     // Ensure texture exists
     if (uoTextureMap->count(_textureID) != 1) return nullptr;
 
-    //if ((*uoTextureMap)[_textureID] == nullptr ) printf("Texture empty!\n");
+    //if ((*uoTextureMap)[_textureID] == nullptr ) printf("TextureID empty!\n");
 
     return (*uoTextureMap)[_textureID];
 }
 
-bool TextureManager::DestroyTexture(Texture _textureID) {
-    return true;
+TextureInfo TextureManager::FetchTextureInfo(TextureID _textureID) {
+    if (!TextureExists(_textureID)) return {};
+
+    return (*uoResourceMap)[_textureID];
 }
 
-bool TextureManager::TextureExists(Texture _textureID) {
-    return (uoTextureMap->count(_textureID) > 0);
+bool TextureManager::TextureExists(TextureID _textureID) {
+    bool exists = (uoTextureMap->count(_textureID) > 0) && (uoResourceMap->count(_textureID) > 0);
+    return exists;
 }
 
 /*
  * Font manager: creating a singleton instance
  */
 
+FontManager* FontManager::fmInstance = FontManager::GetInstance();
 
 FontManager* FontManager::GetInstance() {
     if (!fmInstance) fmInstance = new FontManager;

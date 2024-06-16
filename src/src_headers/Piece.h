@@ -31,7 +31,7 @@ struct Piece_Info {
     char colID = 'W';
     Position<char, int> gamepos {'A', 7};
     Position<char, int> lastpos {'A', 7};
-    Texture textureID = WHITE_PAWN;
+    TextureID textureID = WHITE_PAWN;
 };
 
 class AvailableMove{
@@ -69,9 +69,6 @@ class Piece {
 
         // Piece identification
         Piece_Info* info {};
-
-        // Global ResourceManager pointers
-        TextureManager* tm = TextureManager::GetInstance();
 
         // Local ResourceManager pointers
         enum class Rect;

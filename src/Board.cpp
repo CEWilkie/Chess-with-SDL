@@ -20,14 +20,14 @@ Board::Board() {
     tm->OpenTexture(BOARD_COMPILED);
     tm->OpenTexture(PROMO_WHITE_COMPILED);
     tm->OpenTexture(PROMO_BLACK_COMPILED);
-    tm->OpenTexture(Texture(BOARD_BASE_SECONDARY + BOARD_STYLE.second));
+    tm->OpenTexture(TextureID(BOARD_BASE_SECONDARY + BOARD_STYLE.second));
 }
 
 int Board::CreateBoardTexture() {
     // Open required textures
-    tm->OpenTexture(Texture(BOARD_BASE + BOARD_STYLE.second));
-    tm->OpenTexture(Texture(WHITE_TILE + BOARD_STYLE.second));
-    tm->OpenTexture(Texture(BLACK_TILE + BOARD_STYLE.second));
+    tm->OpenTexture(TextureID(BOARD_BASE + BOARD_STYLE.second));
+    tm->OpenTexture(TextureID(WHITE_TILE + BOARD_STYLE.second));
+    tm->OpenTexture(TextureID(BLACK_TILE + BOARD_STYLE.second));
     auto font = fm->OpenExistingFont(Font::CONFESSION);
 
     // Get board tile dimensions, and board rect
@@ -52,7 +52,7 @@ int Board::CreateBoardTexture() {
     }
 
     // Draw Board Base texture
-    tempTexture = tm->FetchTexture(Texture(BOARD_BASE + BOARD_STYLE.second));
+    tempTexture = tm->FetchTexture(TextureID(BOARD_BASE + BOARD_STYLE.second));
     if (SDL_RenderCopy(window.renderer, tempTexture, nullptr, nullptr) != 0) {
         LogError("Failed to copy base texture", SDL_GetError(), false);
         return -1;
@@ -65,7 +65,7 @@ int Board::CreateBoardTexture() {
     for (int r = 0; r < rows; r++) {
         for (int c = 0; c < columns; c++) {
             // Draw tile
-            tempTexture = tm->FetchTexture(Texture((whiteTile ? WHITE_TILE : BLACK_TILE) + BOARD_STYLE.second));
+            tempTexture = tm->FetchTexture(TextureID((whiteTile ? WHITE_TILE : BLACK_TILE) + BOARD_STYLE.second));
             SDL_RenderCopy(window.renderer, tempTexture, nullptr, &tileRect);
 
             // move rect position
@@ -126,9 +126,9 @@ int Board::CreateBoardTexture() {
     }
 
     // close textures
-    tm->CloseTexture(Texture(BOARD_BASE + BOARD_STYLE.second));
-    tm->CloseTexture(Texture(WHITE_TILE + BOARD_STYLE.second));
-    tm->CloseTexture(Texture(BLACK_TILE + BOARD_STYLE.second));
+    tm->CloseTexture(TextureID(BOARD_BASE + BOARD_STYLE.second));
+    tm->CloseTexture(TextureID(WHITE_TILE + BOARD_STYLE.second));
+    tm->CloseTexture(TextureID(BLACK_TILE + BOARD_STYLE.second));
     fm->CloseFont(Font::CONFESSION);
 
     // Update compiled board texture
@@ -146,12 +146,12 @@ bool Board::CreatePromoMenuTexture() {
      */
 
     // Load textures
-    tm->OpenTexture(Texture(PROMO_BASE+BOARD_STYLE.second));
+    tm->OpenTexture(TextureID(PROMO_BASE + BOARD_STYLE.second));
     for (int c = 0; c < 2; c++) {
-        tm->OpenTexture(Texture(WHITE_QUEEN+PIECE_STYLE.second+c));
-        tm->OpenTexture(Texture(WHITE_ROOK+PIECE_STYLE.second+c));
-        tm->OpenTexture(Texture(WHITE_BISHOP+PIECE_STYLE.second+c));
-        tm->OpenTexture(Texture(WHITE_KNIGHT+PIECE_STYLE.second+c));
+        tm->OpenTexture(TextureID(WHITE_QUEEN + PIECE_STYLE.second + c));
+        tm->OpenTexture(TextureID(WHITE_ROOK + PIECE_STYLE.second + c));
+        tm->OpenTexture(TextureID(WHITE_BISHOP + PIECE_STYLE.second + c));
+        tm->OpenTexture(TextureID(WHITE_KNIGHT + PIECE_STYLE.second + c));
     }
 
     // Temp vars
@@ -166,7 +166,7 @@ bool Board::CreatePromoMenuTexture() {
                                                       SDL_TEXTUREACCESS_TARGET,
                                                       promoRect.w, promoRect.h);
         if (promoTexture == nullptr) {
-            LogError("Failed to create promotion menu Texture", SDL_GetError(), false);
+            LogError("Failed to create promotion menu TextureID", SDL_GetError(), false);
             return false;
         }
 
@@ -185,11 +185,11 @@ bool Board::CreatePromoMenuTexture() {
 
         // Draw icons
         iconRect = {promoRect.w / 25, promoRect.h / 7, promoRect.w * 5/25, promoRect.h * 5/7};
-        Texture pieceIDs[4] = {WHITE_QUEEN, WHITE_ROOK, WHITE_BISHOP, WHITE_KNIGHT};
+        TextureID pieceIDs[4] = {WHITE_QUEEN, WHITE_ROOK, WHITE_BISHOP, WHITE_KNIGHT};
         Rect rectIDs[4] = {Rect::PROMO_QUEEN, Rect::PROMO_ROOK, Rect::PROMO_BISHOP, Rect::PROMO_KNIGHT};
         for (int id = 0; id < 4; id++) {
             // fetch icon texture
-            if ((tempTexture = tm->FetchTexture(Texture(pieceIDs[id] + col + PIECE_STYLE.second))) == nullptr) {
+            if ((tempTexture = tm->FetchTexture(TextureID(pieceIDs[id] + col + PIECE_STYLE.second))) == nullptr) {
                 std::string issue = "Failed to load icon for promoMenus";
                 LogError(issue, SDL_GetError(), false);
                 return false;
@@ -222,12 +222,12 @@ bool Board::CreatePromoMenuTexture() {
     rm->UpdateExistingResource(promoRect, Rect::PROMO_MENU);
 
     // Load textures
-    tm->CloseTexture(Texture(PROMO_BASE+BOARD_STYLE.second));
+    tm->CloseTexture(TextureID(PROMO_BASE + BOARD_STYLE.second));
     for (int c = 0; c < 2; c++) {
-        tm->CloseTexture(Texture(WHITE_QUEEN+PIECE_STYLE.second+c));
-        tm->CloseTexture(Texture(WHITE_ROOK+PIECE_STYLE.second+c));
-        tm->CloseTexture(Texture(WHITE_BISHOP+PIECE_STYLE.second+c));
-        tm->CloseTexture(Texture(WHITE_KNIGHT+PIECE_STYLE.second+c));
+        tm->CloseTexture(TextureID(WHITE_QUEEN + PIECE_STYLE.second + c));
+        tm->CloseTexture(TextureID(WHITE_ROOK + PIECE_STYLE.second + c));
+        tm->CloseTexture(TextureID(WHITE_BISHOP + PIECE_STYLE.second + c));
+        tm->CloseTexture(TextureID(WHITE_KNIGHT + PIECE_STYLE.second + c));
     }
 
     // success

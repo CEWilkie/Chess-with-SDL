@@ -27,11 +27,10 @@ inline const int BOARD_STYLES_MAX = 5;
  */
 
 inline const int NUM_BOARD_TEXTURES = 5, NUM_PIECE_TEXTURES = 12;
-enum Texture : int{
+enum TextureID : int{
     // Board Textures
     BOARD_BASE = 0, BOARD_BASE_SECONDARY, WHITE_TILE, BLACK_TILE, PROMO_BASE,
     BOARD_COMPILED = NUM_BOARD_TEXTURES*BOARD_STYLES_MAX, PROMO_WHITE_COMPILED, PROMO_BLACK_COMPILED,
-
 
     // Piece textures
     WHITE_KING, BLACK_KING, WHITE_QUEEN, BLACK_QUEEN, WHITE_ROOK, BLACK_ROOK, WHITE_BISHOP, BLACK_BISHOP,
@@ -39,8 +38,9 @@ enum Texture : int{
 
     // Movement textures
     MOVE = WHITE_KING + NUM_PIECE_TEXTURES*PIECE_STYLES_MAX, CAPTURE, SELECTED,
-    //new group = ...
 
+    // Texture Sheets
+    BUTTON_SHEET, MENU_SHEET
 };
 
 /*
@@ -53,11 +53,11 @@ enum class Font {CONFESSION};
  * Global Vars to house the current Styles
  */
 
-inline std::pair<std::string, Texture> PIECE_STYLES[PIECE_STYLES_MAX] {};
-inline std::pair<std::string, Texture> PIECE_STYLE {};
+inline std::pair<std::string, TextureID> PIECE_STYLES[PIECE_STYLES_MAX] {};
+inline std::pair<std::string, TextureID> PIECE_STYLE {};
 
-inline std::pair<std::string, Texture> BOARD_STYLES[BOARD_STYLES_MAX] {};
-inline std::pair<std::string, Texture> BOARD_STYLE {};
+inline std::pair<std::string, TextureID> BOARD_STYLES[BOARD_STYLES_MAX] {};
+inline std::pair<std::string, TextureID> BOARD_STYLE {};
 
 //...
 //...

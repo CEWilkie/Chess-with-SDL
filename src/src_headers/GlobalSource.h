@@ -54,43 +54,41 @@ class Mouse {
         bool active = false;
         bool prevactive = false;
         bool heldactive = false;
-        bool clickLock = false;
         Position<int, int> position {};
 
     public:
-        void UpdateState(bool mouseDown) {
-            // Update position
-            SDL_GetMouseState(&position.x, &position.y);
-
-            // prevent mouseInputs
-            if (clickLock) return;
-
+        void MouseDown(bool _isDown) {
             // Update click values
             prevactive = active;
-            active = mouseDown;
+            active = _isDown;
             heldactive = (prevactive && active);
+        }
+
+        void UpdatePosition() {
+            // Update position
+            SDL_GetMouseState(&position.x, &position.y);
         }
 
         Position<int, int> GetMousePosition() { return position; }
 
-        void LockMouseInput(bool lock) { clickLock = lock; }
-
-        bool InRadius(Position<int, int> pos, int radius) const {
-            // Return result
-            return (std::pow(position.x - pos.x, 2) + std::pow(position.y - pos.y, 2) == std::pow(radius, 2));
+        bool InRadius(Position<int, int> pos, int radius) {
+            UpdatePosition();
+            return (std::pow(position.x - pos.x, 2) + std::pow(position.y - pos.y, 2) <= std::pow(radius, 2));
         }
 
-        bool InRect(SDL_Rect rect) const {
-            // return result
+        bool InRect(SDL_Rect rect) {
+            UpdatePosition();
             return abs(position.x - (rect.x + rect.w/2)) <= rect.w/2 && abs(position.y - (rect.y + rect.h/2)) <= rect.h/2;
         }
 
-        bool UnheldClick(SDL_Rect rect) const {
+        bool UnheldClick(SDL_Rect rect) {
+            UpdatePosition();
             return active && !heldactive && InRect(rect);
         }
 
-        bool HeldClick(SDL_Rect rect) const {
-            return active && heldactive && InRect(rect);
+        bool ClickOnRelease(SDL_Rect rect) {
+            UpdatePosition();
+            return !active && prevactive && InRect(rect);
         }
 
         bool IsHeldActive() const {
