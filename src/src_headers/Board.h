@@ -24,8 +24,6 @@
  */
 
 class Piece;
-template<class Key, class Resource>
-class ResourceManager;
 
 /*
  * Main Defs
@@ -48,8 +46,8 @@ class Board{
         const int minInfoWidth = 300;
 
         // Local resource manager pointers
-        enum class Rect;
-        ResourceManager<Rect, SDL_Rect>* rm = new ResourceManager<Rect, SDL_Rect>;
+        enum RectID : int;
+        GenericManager<SDL_Rect>* rm = new GenericManager<SDL_Rect>;
 
         // Gameplay recording vars
         std::string gameDataDirPath = "../GameData";
@@ -93,7 +91,7 @@ class Board{
  * Local Enums
  */
 
-enum class Board::Rect {
+enum Board::RectID : int {
     BOARD, OPTIONS, GAME_INFO, TILE, PROMO_MENU,
     PROMO_QUEEN, PROMO_ROOK, PROMO_BISHOP, PROMO_KNIGHT,
 };

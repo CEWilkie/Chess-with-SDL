@@ -18,11 +18,11 @@
 #include "src_headers/Rook.h"
 #include "src_headers/Queen.h"
 #include "src_headers/King.h"
-#include "src_headers/AppScreen.h"
+#include "Screen/HomeScreen.h"
 
 int EnsureWindowSize(Board* _board) {
     // Fetch rect of current window properties
-    SDL_Rect rect_current = {0, 0};
+    SDL_Rect rect_current = {0, 0, 0, 0};
     SDL_GetWindowSize(window.window, &rect_current.w, &rect_current.h);
     //SDL_GetWindowPosition(Window.window, &rect_current.a, &rect_current.b);
 
@@ -34,17 +34,18 @@ int EnsureWindowSize(Board* _board) {
     int changed = 0;
     if(rect_current.h != window.currentRect.h || rect_current.w != window.currentRect.w) { // changed (generic)
         changed = 1;
-        window.currentRect = rect_current;
     }
     if (rect_current.w < minW) { // below min
         changed = -1;
-        SDL_SetWindowSize(window.window, minW, rect_current.h);
+        rect_current.w = minW;
     }
     if (rect_current.h < minH) { // below min
         changed = -1;
-        SDL_SetWindowSize(window.window, rect_current.w, minH);
+        rect_current.h = minH;
     }
 
+    SDL_SetWindowSize(window.window, rect_current.w, rect_current.h);
+    window.currentRect = rect_current;
     return changed;
 }
 
@@ -205,8 +206,8 @@ int main(int argc, char** argv) {
     auto oppptr = &black_pieces;
     SelectedPiece selectedPiece {};
 
-    Menu menu({200, 200}, {300, 125}, "HI!");
-    menu.CreateTextures();
+    HomeScreen mm;
+    mm.CreateTextures();
 
     bool running = true;
     bool eot = false;
@@ -219,23 +220,22 @@ int main(int argc, char** argv) {
          *  DRAW TO SCREEN
          */
 
-        // Display Board and Background
-        SDL_RenderCopy(window.renderer, window.background, nullptr, &window.currentRect);
-        board.DisplayGameBoard();
+//        // DisplayToggle Board and Background
+//        SDL_RenderCopy(window.renderer, window.background, nullptr, &window.currentRect);
+//        board.DisplayGameBoard();
+//
+//        // DisplayToggle Pieces and fetch their moves
+//        for (Piece* piece : all_pieces) {
+//            piece->ClearMoves();
+//            piece->ClearNextMoves();
+//            piece->FetchMoves(*teamptr, *oppptr, board);
+//            piece->PreventMoveIntoCheck(*teamptr, *oppptr, board);
+//
+//            piece->DisplayPiece();
+//            piece->DisplayMoves(board);
+//        }
 
-        // Display Pieces and fetch their moves
-        for (Piece* piece : all_pieces) {
-            piece->ClearMoves();
-            piece->ClearNextMoves();
-            piece->FetchMoves(*teamptr, *oppptr, board);
-            piece->PreventMoveIntoCheck(*teamptr, *oppptr, board);
-
-            piece->DisplayPiece();
-            piece->DisplayMoves(board);
-        }
-
-        menu.Display();
-        menu.CloseClicked();
+        if (!mm.Display()) running = false;
 
         /*
          * CHECKMATE + STALEMATE CHECKING
@@ -247,115 +247,107 @@ int main(int argc, char** argv) {
             return !piece->GetAvailableMovesPtr()->empty();
         });
 
-        // if there are no moves available, check if King is being checked by opp
-        if (!canMove && std::any_of(oppptr->begin(), oppptr->end(), [](Piece *piece) {
-            return piece->IsCheckingKing();
-        })) {
-            // conditions met: checkmate
-            printf("CHECKMATE! 1:0");
-            running = false;
-        } else if (!canMove) {
-            // conditions met: stalemate
-            printf("STALEMATE! 0.5:0.5");
-            running = false;
-        }
+//        // if there are no moves available, check if King is being checked by opp
+//        if (!canMove && std::any_of(oppptr->begin(), oppptr->end(), [](Piece *piece) {
+//            return piece->IsCheckingKing();
+//        })) {
+//            // conditions met: checkmate
+//            printf("CHECKMATE! 1:0");
+//            running = false;
+//        } else if (!canMove) {
+//            // conditions met: stalemate
+//            printf("STALEMATE! 0.5:0.5");
+//            running = false;
+//        }
 
         /*
          *  FETCH USER INPUT FROM EVENTS
          */
 
         // User input events
-        SDL_Event event;
-        while (SDL_PollEvent(&event) != 0) {
-            if (event.type == SDL_QUIT) {
-                running = false;
-            }
-            if (event.type == SDL_MOUSEBUTTONDOWN) {
-                mouse.MouseDown(true);
-            }
-            if (event.type == SDL_MOUSEBUTTONUP) {
-                mouse.MouseDown(false);
-            }
-        }
+        mm.HandleEvents();
+        mm.UpdateButtonStates();
+        mm.CheckButtons();
+
 
         /*
          * EVENT MANAGEMENT - MOVES AND PIECE SELECTION CHECKING
          */
 
         // check if user has clicked on a move
-        if (selectedPiece.CheckForMoveClicked(&board)) {
-            // make move
-            selectedPiece.MakeMove(&board);
-            eot = true;
-        }
-
-        // check if user clicks on a piece
-        if (!eot) selectedPiece.CheckForPieceClicked(teamptr);
-
-        /*
-         *  END OF TURN MANAGEMENT
-         */
-
-        // Do promotion if pawn has reached the end tile
-        if (eot) {
-            for (auto piece : *teamptr) {
-                if (piece->ReadyToPromote()) {
-                    allTasksComplete = false;
-
-                    // Fetch user input for promotion
-                    board.DisplayPromoMenu(piece);
-
-                    Piece* promotedPiece = nullptr;
-                    std::string promoteTo = board.GetPromoMenuInput();
-                    Piece_Info* pi = piece->GetPieceInfoPtr();
-
-                    if (promoteTo == "Knight") {
-                        promotedPiece = new Knight("Knight", pi->colID, pi->gamepos);
-                    }
-                    else if (promoteTo == "Bishop") {
-                        promotedPiece = new Bishop("Bishop", pi->colID, pi->gamepos);
-                    }
-                    else if (promoteTo == "Rook") {
-                        promotedPiece = new Rook("Rook", pi->colID, pi->gamepos);
-                    }
-                    else if (promoteTo == "Queen"){
-                        promotedPiece = new Queen("Queen", pi->colID, pi->gamepos);
-                    }
-
-                    if (promotedPiece != nullptr) {
-                        // Piece has been made, mark pawn as captured and add new piece to teamptr
-                        piece->Captured(true);
-                        piece->UpdatePromoteInfo(promotedPiece);
-
-                        promotedPiece->CreateTextures();
-                        promotedPiece->GetRectOfBoardPosition(board);
-
-                        teamptr->push_back(promotedPiece);
-                        all_pieces.push_back(promotedPiece);
-
-                        promotedPiece->FetchMoves(*teamptr, *oppptr, board);
-
-                        allTasksComplete = true;
-                    }
-                }
-            }
-        }
-
-        if (eot && allTasksComplete) {
-            // update checker vars
-            for (auto piece : all_pieces) {
-                piece->UpdateCheckerVars();
-            }
-
-            // Create and get the lastMove string
-            selectedPiece.CreateACNstring(teamptr);
-            board.WriteMoveToFile(selectedPiece.GetACNMoveString());
-
-            std::swap(teamptr, oppptr);
-            board.IncrementTurn();
-
-            eot = false;
-        }
+//        if (selectedPiece.CheckForMoveClicked(&board)) {
+//            // make move
+//            selectedPiece.MakeMove(&board);
+//            eot = true;
+//        }
+//
+//        // check if user clicks on a piece
+//        if (!eot) selectedPiece.CheckForPieceClicked(teamptr);
+//
+//        /*
+//         *  END OF TURN MANAGEMENT
+//         */
+//
+//        // Do promotion if pawn has reached the end tile
+//        if (eot) {
+//            for (auto piece : *teamptr) {
+//                if (piece->ReadyToPromote()) {
+//                    allTasksComplete = false;
+//
+//                    // Fetch user input for promotion
+//                    board.DisplayPromoMenu(piece);
+//
+//                    Piece* promotedPiece = nullptr;
+//                    std::string promoteTo = board.GetPromoMenuInput();
+//                    Piece_Info* pi = piece->GetPieceInfoPtr();
+//
+//                    if (promoteTo == "Knight") {
+//                        promotedPiece = new Knight("Knight", pi->colID, pi->gamepos);
+//                    }
+//                    else if (promoteTo == "Bishop") {
+//                        promotedPiece = new Bishop("Bishop", pi->colID, pi->gamepos);
+//                    }
+//                    else if (promoteTo == "Rook") {
+//                        promotedPiece = new Rook("Rook", pi->colID, pi->gamepos);
+//                    }
+//                    else if (promoteTo == "Queen"){
+//                        promotedPiece = new Queen("Queen", pi->colID, pi->gamepos);
+//                    }
+//
+//                    if (promotedPiece != nullptr) {
+//                        // Piece has been made, mark pawn as captured and add new piece to teamptr
+//                        piece->Captured(true);
+//                        piece->UpdatePromoteInfo(promotedPiece);
+//
+//                        promotedPiece->CreateTextures();
+//                        promotedPiece->GetRectOfBoardPosition(board);
+//
+//                        teamptr->push_back(promotedPiece);
+//                        all_pieces.push_back(promotedPiece);
+//
+//                        promotedPiece->FetchMoves(*teamptr, *oppptr, board);
+//
+//                        allTasksComplete = true;
+//                    }
+//                }
+//            }
+//        }
+//
+//        if (eot && allTasksComplete) {
+//            // update checker vars
+//            for (auto piece : all_pieces) {
+//                piece->UpdateCheckerVars();
+//            }
+//
+//            // Create and get the lastMove string
+//            selectedPiece.CreateACNstring(teamptr);
+//            board.WriteMoveToFile(selectedPiece.GetACNMoveString());
+//
+//            std::swap(teamptr, oppptr);
+//            board.IncrementTurn();
+//
+//            eot = false;
+//        }
 
         /*
          *  RECREATE TEXTURES IF REQUIRED
@@ -364,26 +356,27 @@ int main(int argc, char** argv) {
         int winSizeChanged = EnsureWindowSize(&board);
         if (winSizeChanged == 1) {
             // Update board size
-            int w, h;
-            SDL_GetWindowSize(window.window, &w, &h);
-            board.FillToBounds(w, h);
+//            int w, h;
+//            SDL_GetWindowSize(window.window, &w, &h);
+//            board.FillToBounds(w, h);
         }
         if (winSizeChanged != 0){
             // board
-            board.CreateBoardTexture();
-            board.CreatePromoMenuTexture();
+//            board.CreateBoardTexture();
+//            board.CreatePromoMenuTexture();
+//
+//            // white pieces
+//            for (Piece* piece : white_pieces) {
+//                piece->GetRectOfBoardPosition(board);
+//            }
+//
+//            // black pieces
+//            for (Piece* piece : black_pieces) {
+//                piece->GetRectOfBoardPosition(board);
+//            }
 
-            // white pieces
-            for (Piece* piece : white_pieces) {
-                piece->GetRectOfBoardPosition(board);
-            }
-
-            // black pieces
-            for (Piece* piece : black_pieces) {
-                piece->GetRectOfBoardPosition(board);
-            }
-
-            menu.CreateTextures();
+            mm.ResizeScreen();
+            mm.CreateTextures();
         }
 
 
@@ -391,7 +384,15 @@ int main(int argc, char** argv) {
          *  UPDATE SCREEN
          */
 
+        // Example background Fill
+
         SDL_RenderPresent(window.renderer);
+
+        /*
+         * CHECK FOR EXIT CONDITION
+         */
+
+        if (mm.FetchScreenState(AppScreen::ScreenState::SCREEN_CLOSED)) running = false;
     }
 
     SDL_Quit();

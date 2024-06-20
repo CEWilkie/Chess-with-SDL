@@ -71,8 +71,8 @@ class Piece {
         Piece_Info* info {};
 
         // Local ResourceManager pointers
-        enum class Rect;
-        ResourceManager<Rect, SDL_Rect>* rm = new ResourceManager<Rect, SDL_Rect>;
+        enum RectID : int;
+        GenericManager<SDL_Rect>* rm = new GenericManager<SDL_Rect>;
 
         // SDL display
         std::string imgPath {};
@@ -171,7 +171,7 @@ class Piece {
  * Local Enums
  */
 
-enum class Piece::Rect {
+enum Piece::RectID : int {
         PIECE_RECT, BOARDPOS_RECT,
 };
 

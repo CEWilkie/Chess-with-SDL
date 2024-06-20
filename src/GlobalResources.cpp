@@ -15,12 +15,13 @@ bool InitFonts() {
      * Construct fonts
      */
 
-    fm->CreateNewFont("../Resources/Fonts/CF/TCFR.ttf", 100, Font::CONFESSION);
-
     return true;
 }
 
 bool InitTextures() {
+    // Create texture Manager
+    tm = new TextureManager(window.renderer);
+
     // Temp vars
     std::string dirPath;
     int dirCount;
@@ -55,7 +56,7 @@ bool InitTextures() {
     tm->NewTexture(nullptr, PROMO_WHITE_COMPILED);
 
     /*
-     * Construct Button Textures
+     * Construct ButtonID Textures
      */
 
     tm->NewTexture("../Resources/Menus/ButtonSheet.png", {10, 10}, BUTTON_SHEET);

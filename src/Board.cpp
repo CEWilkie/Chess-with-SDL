@@ -6,15 +6,15 @@
 
 Board::Board() {
     // Add rects for game board regions
-    rm->NewResource({0, 0, minMenuWidth, minBoardWidth}, Rect::OPTIONS);
-    rm->NewResource({minMenuWidth, 0, minBoardWidth, minBoardWidth}, Rect::BOARD);
-    rm->NewResource({minMenuWidth + minBoardWidth, 0, minInfoWidth, minBoardWidth}, Rect::GAME_INFO);
-    rm->NewResource({0, 0, 0, 0}, Rect::PROMO_MENU);
+    rm->NewResource({0, 0, minMenuWidth, minBoardWidth}, RectID::OPTIONS);
+    rm->NewResource({minMenuWidth, 0, minBoardWidth, minBoardWidth}, RectID::BOARD);
+    rm->NewResource({minMenuWidth + minBoardWidth, 0, minInfoWidth, minBoardWidth}, RectID::GAME_INFO);
+    rm->NewResource({0, 0, 0, 0}, RectID::PROMO_MENU);
 
     // Construct rect for board tile
     SDL_Rect tileRect = {};
     GetTileRectFromPosition(tileRect, {'a', 1});
-    rm->NewResource(tileRect, Rect::TILE);
+    rm->NewResource(tileRect, RectID::TILE);
 
     // Open textures
     tm->OpenTexture(BOARD_COMPILED);
@@ -28,11 +28,13 @@ int Board::CreateBoardTexture() {
     tm->OpenTexture(TextureID(BOARD_BASE + BOARD_STYLE.second));
     tm->OpenTexture(TextureID(WHITE_TILE + BOARD_STYLE.second));
     tm->OpenTexture(TextureID(BLACK_TILE + BOARD_STYLE.second));
-    auto font = fm->OpenExistingFont(Font::CONFESSION);
+
+    TTF_Font* font = TTF_OpenFont("../Resources/Fonts/CF/TCFR.ttf", 100);
 
     // Get board tile dimensions, and board rect
-    SDL_Rect boardRect = rm->FetchResource(Rect::BOARD);
+    SDL_Rect boardRect;
     SDL_Rect tileRect;
+    rm->FetchResource(boardRect, RectID::BOARD);
 
     // Create temp textures to draw to
     SDL_Texture* tempTexture;
@@ -52,8 +54,9 @@ int Board::CreateBoardTexture() {
     }
 
     // Draw Board Base texture
-    tempTexture = tm->FetchTexture(TextureID(BOARD_BASE + BOARD_STYLE.second));
+    tempTexture = tm->AccessTexture(TextureID(BOARD_BASE + BOARD_STYLE.second));
     if (SDL_RenderCopy(window.renderer, tempTexture, nullptr, nullptr) != 0) {
+        printf("%s\n", tm->GetIssueString(tm->GetIssue()).c_str());
         LogError("Failed to copy base texture", SDL_GetError(), false);
         return -1;
     }
@@ -65,7 +68,7 @@ int Board::CreateBoardTexture() {
     for (int r = 0; r < rows; r++) {
         for (int c = 0; c < columns; c++) {
             // Draw tile
-            tempTexture = tm->FetchTexture(TextureID((whiteTile ? WHITE_TILE : BLACK_TILE) + BOARD_STYLE.second));
+            tempTexture = tm->AccessTexture(TextureID((whiteTile ? WHITE_TILE : BLACK_TILE) + BOARD_STYLE.second));
             SDL_RenderCopy(window.renderer, tempTexture, nullptr, &tileRect);
 
             // move rect position
@@ -129,7 +132,7 @@ int Board::CreateBoardTexture() {
     tm->CloseTexture(TextureID(BOARD_BASE + BOARD_STYLE.second));
     tm->CloseTexture(TextureID(WHITE_TILE + BOARD_STYLE.second));
     tm->CloseTexture(TextureID(BLACK_TILE + BOARD_STYLE.second));
-    fm->CloseFont(Font::CONFESSION);
+    TTF_CloseFont(font);
 
     // Update compiled board texture
     tm->UpdateTexture(boardTexture, BOARD_COMPILED);
@@ -177,7 +180,7 @@ bool Board::CreatePromoMenuTexture() {
         }
 
         // Draw base
-        tempTexture = tm->FetchTexture(PROMO_BASE);
+        tempTexture = tm->AccessTexture(PROMO_BASE);
         if (SDL_RenderCopy(window.renderer, tempTexture, nullptr, nullptr) != 0) {
             LogError("Failed to draw promoMenu base texture", SDL_GetError(), false);
             return false;
@@ -186,10 +189,10 @@ bool Board::CreatePromoMenuTexture() {
         // Draw icons
         iconRect = {promoRect.w / 25, promoRect.h / 7, promoRect.w * 5/25, promoRect.h * 5/7};
         TextureID pieceIDs[4] = {WHITE_QUEEN, WHITE_ROOK, WHITE_BISHOP, WHITE_KNIGHT};
-        Rect rectIDs[4] = {Rect::PROMO_QUEEN, Rect::PROMO_ROOK, Rect::PROMO_BISHOP, Rect::PROMO_KNIGHT};
+        RectID rectIDs[4] = {RectID::PROMO_QUEEN, RectID::PROMO_ROOK, RectID::PROMO_BISHOP, RectID::PROMO_KNIGHT};
         for (int id = 0; id < 4; id++) {
             // fetch icon texture
-            if ((tempTexture = tm->FetchTexture(TextureID(pieceIDs[id] + col + PIECE_STYLE.second))) == nullptr) {
+            if ((tempTexture = tm->AccessTexture(TextureID(pieceIDs[id] + col + PIECE_STYLE.second))) == nullptr) {
                 std::string issue = "Failed to load icon for promoMenus";
                 LogError(issue, SDL_GetError(), false);
                 return false;
@@ -202,7 +205,7 @@ bool Board::CreatePromoMenuTexture() {
             }
 
             // add iconRect to rectCollection, move to next icon position
-            rm->NewOrUpdateExisting(iconRect, rectIDs[id]);
+            rm->NewOrUpdateResource(iconRect, rectIDs[id]);
             iconRect.x += iconRect.w * 6/5;
         }
 
@@ -214,12 +217,13 @@ bool Board::CreatePromoMenuTexture() {
     SDL_SetRenderTarget(window.renderer, nullptr);
 
     // Reposition the promoMenus rect to centre of boardRect
-    auto boardRect = rm->FetchResource(Rect::BOARD);
+    SDL_Rect boardRect;
+    rm->FetchResource(boardRect, RectID::BOARD);
     promoRect.x = boardRect.x + boardRect.w/2 - promoRect.w/2;
     promoRect.y = boardRect.h/2 - promoRect.h/2;
 
     // update stored promoRect
-    rm->UpdateExistingResource(promoRect, Rect::PROMO_MENU);
+    rm->UpdateResource(promoRect, RectID::PROMO_MENU);
 
     // Load textures
     tm->CloseTexture(TextureID(PROMO_BASE + BOARD_STYLE.second));
@@ -235,9 +239,10 @@ bool Board::CreatePromoMenuTexture() {
 }
 
 void Board::DisplayPromoMenu(Piece* _promotingPiece) {
-    auto col = _promotingPiece->GetPieceInfoPtr()->colID == 'W' ?  PROMO_WHITE_COMPILED : PROMO_BLACK_COMPILED;
-    auto displayMenu = tm->FetchTexture(col);
-    auto rect = rm->FetchResource(Rect::PROMO_MENU);
+    int col = _promotingPiece->GetPieceInfoPtr()->colID == 'W' ?  PROMO_WHITE_COMPILED : PROMO_BLACK_COMPILED;
+    SDL_Texture* displayMenu = tm->AccessTexture(col);
+    SDL_Rect rect;
+    rm->FetchResource(rect, RectID::PROMO_MENU);
 
     SDL_RenderCopy(window.renderer, displayMenu, nullptr, &rect);
 }
@@ -247,19 +252,19 @@ void Board::DisplayGameBoard() {
     SDL_Texture* texture;
     SDL_Rect rect;
 
-    // Display Board background
-    texture = tm->FetchTexture(BOARD_COMPILED);
-    rect = rm->FetchResource(Rect::BOARD);
+    // DisplayToggle Board background
+    texture = tm->AccessTexture(BOARD_COMPILED);
+    rm->FetchResource(rect, RectID::BOARD);
     SDL_RenderCopy(window.renderer, texture, nullptr, &rect);
 
     // display menu background
-    texture = tm->FetchTexture(BOARD_BASE_SECONDARY);
-    rect = rm->FetchResource(Rect::OPTIONS);
+    texture = tm->AccessTexture(BOARD_BASE_SECONDARY);
+    rm->FetchResource(rect, RectID::OPTIONS);
     SDL_RenderCopy(window.renderer, texture, nullptr, &rect);
 
     // display game info background
-    texture = tm->FetchTexture(BOARD_BASE_SECONDARY);
-    rect = rm->FetchResource(Rect::GAME_INFO);
+    texture = tm->AccessTexture(BOARD_BASE_SECONDARY);
+    rm->FetchResource(rect, RectID::GAME_INFO);
     SDL_RenderCopy(window.renderer, texture, nullptr, &rect);
 }
 
@@ -271,21 +276,23 @@ std::string Board::GetPromoMenuInput() {
     // no click made yet
     if (!mouse.IsUnheldActive()) return "noinput";
 
-    Rect rectIDs[4] = {Rect::PROMO_QUEEN, Rect::PROMO_ROOK, Rect::PROMO_BISHOP, Rect::PROMO_KNIGHT};
-    SDL_Rect promoMenuRect = rm->FetchResource(Rect::PROMO_MENU);
+    RectID rectIDs[4] = {RectID::PROMO_QUEEN, RectID::PROMO_ROOK, RectID::PROMO_BISHOP, RectID::PROMO_KNIGHT};
+    SDL_Rect promoMenuRect;
+    rm->FetchResource(promoMenuRect, RectID::PROMO_MENU);
 
     for (auto& rectID : rectIDs) {
-        auto rect = rm->FetchResource(rectID);
+        SDL_Rect rect;
+        rm->FetchResource(rect, rectID);
         rect.x += promoMenuRect.x;
         rect.y += promoMenuRect.y;
 
         if (mouse.UnheldClick(rect)) {
             std::string pieceName;
             switch (rectID){
-                case Rect::PROMO_QUEEN: pieceName = "Queen"; break;
-                case Rect::PROMO_ROOK: pieceName = "Rook"; break;
-                case Rect::PROMO_BISHOP: pieceName = "Bishop"; break;
-                case Rect::PROMO_KNIGHT: pieceName = "Knight"; break;
+                case RectID::PROMO_QUEEN: pieceName = "Queen"; break;
+                case RectID::PROMO_ROOK: pieceName = "Rook"; break;
+                case RectID::PROMO_BISHOP: pieceName = "Bishop"; break;
+                case RectID::PROMO_KNIGHT: pieceName = "Knight"; break;
                 default: break;
             }
 
@@ -298,7 +305,8 @@ std::string Board::GetPromoMenuInput() {
 }
 
 void Board::GetTileDimensions(int& _w, int& _h) const {
-    SDL_Rect boardRect = rm->FetchResource(Rect::BOARD);
+    SDL_Rect boardRect;
+    rm->FetchResource(boardRect, RectID::BOARD);
     int tileWidth = int((1 - boardBorder*2) * (float)boardRect.w / columns);
     int tileHeight = int((1 - boardBorder*2) * (float)boardRect.h / rows);
 
@@ -323,7 +331,8 @@ Pair<int> Board::GetRowsColumns() {
 }
 
 void Board::GetBoardBLPosition(int& _x, int& _y) const {
-    SDL_Rect boardRect = rm->FetchResource(Rect::BOARD);
+    SDL_Rect boardRect;
+    rm->FetchResource(boardRect, RectID::BOARD);
 
     _x = boardRect.x + int((double)boardRect.w * boardBorder);
     _y = int((double)boardRect.h * (1-2*boardBorder));
@@ -331,7 +340,8 @@ void Board::GetBoardBLPosition(int& _x, int& _y) const {
 
 void Board::GetTileRectFromPosition(SDL_Rect &rect, Position<char, int> position) const {
     // Get rect of a1
-    SDL_Rect boardRect = rm->FetchResource(Rect::BOARD);
+    SDL_Rect boardRect;
+    rm->FetchResource(boardRect, RectID::BOARD);
     GetBoardBLPosition(rect.x, rect.y);
     GetTileDimensions(rect.w, rect.h);
 
@@ -380,10 +390,11 @@ void Board::FillToBounds(int _w, int _h) {
     ratio = (double)boardHeight / minBoardWidth;
 
     // Resize rects
-    Rect rectIDs[3] {Rect::OPTIONS, Rect::BOARD, Rect::GAME_INFO};
+    RectID rectIDs[3] {RectID::OPTIONS, RectID::BOARD, RectID::GAME_INFO};
     int minWidth[3] {minMenuWidth, minBoardWidth, minInfoWidth};
     for (int id = 0; id < 3; id++) {
-        auto rect = rm->FetchResource(rectIDs[id]);
+        SDL_Rect rect;
+        rm->FetchResource(rect, rectIDs[id]);
         rect.h = boardHeight;
         rect.w = int(minWidth[id] * ratio);
 
@@ -392,12 +403,13 @@ void Board::FillToBounds(int _w, int _h) {
         rect.x = 0;
 
         if (id > 0) {
-            auto prevRect = rm->FetchResource(rectIDs[id-1]);
+            SDL_Rect prevRect;
+            rm->FetchResource(prevRect, rectIDs[id-1]);
             rect.x = prevRect.x + prevRect.w;
         }
 
         // Update stored rect
-        rm->UpdateExistingResource(rect, rectIDs[id]);
+        rm->UpdateResource(rect, rectIDs[id]);
     }
 }
 
