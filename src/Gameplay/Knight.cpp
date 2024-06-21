@@ -2,7 +2,7 @@
 // Created by cew05 on 26/04/2024.
 //
 
-#include "src_headers/Knight.h"
+#include "include/Knight.h"
 
 Knight::Knight(const std::string& _name, char _colID, Position<char, int> _gamepos)
 : Piece(_name, _colID, _gamepos) {

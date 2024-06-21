@@ -5,7 +5,7 @@
 #ifndef CHESS_WITH_SDL_BUTTON_H
 #define CHESS_WITH_SDL_BUTTON_H
 
-#include "../src_headers/GlobalResources.h"
+#include "../../src_headers/GlobalResources.h"
 #include "SDL_ttf.h"
 
 enum ButtonTexture : int {

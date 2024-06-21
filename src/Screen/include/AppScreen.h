@@ -7,7 +7,7 @@
 
 #include "SDL_ttf.h"
 
-#include "../src_headers/GlobalSource.h"
+#include "../../src_headers/GlobalSource.h"
 #include "Menu.h"
 
 /*
@@ -37,21 +37,21 @@ class AppScreen {
         AppScreen();
 
         // Display screen
-        bool CreateTextures();
-        bool LoadScreen();
-        bool Display();
+        virtual bool CreateTextures();
+        virtual bool LoadScreen();
+        virtual bool Display();
 
         // respositioning
-        void ResizeScreen();
+        virtual void ResizeScreen();
 
         // Event Handling
-        virtual void HandleEvents();
         void UpdateButtonStates();
+        virtual void HandleEvents();
         virtual void CheckButtons();
 
         // Fetch states
         enum ScreenState : int {
-            SCREEN_CLOSED,
+            SCREEN_CLOSED, NO_INPUT,
         };
         [[nodiscard]] bool FetchScreenState(int _stateID);
 };

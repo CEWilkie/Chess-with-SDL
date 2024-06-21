@@ -10,8 +10,8 @@
 #include <SDL_image.h>
 #include <algorithm>
 
-#include "GlobalSource.h"
-#include "GlobalResources.h"
+#include "../../src_headers/GlobalSource.h"
+#include "../../src_headers/GlobalResources.h"
 #include "Board.h"
 
 /*

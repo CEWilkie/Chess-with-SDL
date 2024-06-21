@@ -2,7 +2,7 @@
 // Created by cew05 on 09/05/2024.
 //
 
-#include "src_headers/Bishop.h"
+#include "include/Bishop.h"
 
 Bishop::Bishop(const std::string &_name, char _colID, Position<char, int> _gamepos)
 : Piece(_name, _colID,_gamepos) {

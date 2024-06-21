@@ -18,7 +18,7 @@ class HomeScreen : public AppScreen {
         };
 
         enum buttonID : int {
-            PLAY_VS_AI,
+            PLAY_VS_AI, PLAY_NETWORK, REVIEW_GAMES,
         };
 
     public:

@@ -2,7 +2,7 @@
 // Created by cew05 on 24/04/2024.
 //
 
-#include "src_headers/Board.h"
+#include "include/Board.h"
 
 Board::Board() {
     // Add rects for game board regions
@@ -61,10 +61,22 @@ int Board::CreateBoardTexture() {
         return -1;
     }
 
+    // Shrink boardRect to create the gameboard within
+
     // Create board grid using the tile textures
     bool whiteTile = false;
-    tileRect = {int((double)boardRect.w * boardBorder), int((double)boardRect.h * boardBorder)};
-    GetTileDimensions(tileRect.w, tileRect.h);
+
+    // Determine top left tile size and position
+    tileRect = {0, 0,
+                int(((double)boardRect.w * (1-2*boardBorder)) / columns),
+                int(((double)boardRect.h * (1-2*boardBorder)) / rows)};
+    tileRect.x = (boardRect.w - (columns*tileRect.w)) / 2;
+    tileRect.y = (boardRect.h - (rows*tileRect.h)) / 2;
+
+    // Store tile
+    topLeftTile = tileRect;
+
+    // Now draw board grid pattern
     for (int r = 0; r < rows; r++) {
         for (int c = 0; c < columns; c++) {
             // Draw tile
@@ -77,7 +89,7 @@ int Board::CreateBoardTexture() {
         }
         // move up to next row
         whiteTile = !whiteTile;
-        tileRect.x = int(boardRect.w * 0.1);
+        tileRect.x = (boardRect.w - (columns*tileRect.w)) / 2;
         tileRect.y += tileRect.h;
     }
 
@@ -88,12 +100,14 @@ int Board::CreateBoardTexture() {
         return -1;
     }
 
-    // Set tileRect position for row labels from BL and indent by tileBorder size
-    tileRect.x = int((double)boardRect.w * boardBorder) + int((double)tileRect.w * tile_borderWidth);
-    tileRect.y = int((double)boardRect.h * (1-2*boardBorder)) ;
+    // Reset tile position, set to BL tile and indent
+    tileRect.x = (boardRect.w - (columns*tileRect.w)) / 2;
+    tileRect.y = (boardRect.h - (rows*tileRect.h)) / 2;
+    tileRect.x += int((double)tileRect.w * tile_borderWidth);
+    tileRect.y += int((double)tileRect.y * tile_borderHeight);
+    tileRect.y += tileRect.h * (rows-1);
 
-    GetTileDimensions(tileRect.w, tileRect.h);
-    std::string label;
+    std::string label = " ";
     for (int axis = 0; axis < 2; axis++) {
         // Axis == 0 -> rows
         for (int lIndex = 0; lIndex < ((axis == 0) ? rows : columns); lIndex++) {
@@ -115,17 +129,29 @@ int Board::CreateBoardTexture() {
             labelRect.h = labelRect.h;
             labelRect.w = int((float)labelSize.first / heightRatio);
 
-            // Adjust position
-            if (axis == 0) labelRect.y = tileRect.y - tileRect.h * lIndex;
-            else labelRect.x = labelRect.x + tileRect.w*lIndex;
+            // adjust for space above / below the character
+            printf("FONT HEIGHT %d FONT ASCENT %d\n", TTF_FontHeight(font), TTF_FontAscent(font));
+            if (axis == 0) labelRect.y -= int(double(TTF_FontHeight(font) - TTF_FontAscent(font)) / heightRatio);
+            else labelRect.y -= int((double)TTF_FontDescent(font) / heightRatio);
+
+            // Adjust position of row label
+            if (axis == 0) tileRect.y -= tileRect.h;
+            else {
+                tileRect.x += tileRect.w;
+                labelRect.x -= labelRect.w;
+                labelRect.y -= labelRect.h;
+            }
 
             // Draw label
             SDL_RenderCopy(window.renderer, tempTexture, nullptr, &labelRect);
         }
 
-        // position rect for columns
-        tileRect.x = int((double)boardRect.w * boardBorder * 2) - tileRect.w / 2 + 2*int((double)tileRect.w * tile_borderWidth);
-        tileRect.y = int((double)boardRect.h * (1-2*boardBorder)) + tileRect.h /2;
+        // Reset tile position, set to BL tile and indent
+        tileRect.x = (boardRect.w - (columns*tileRect.w)) / 2;
+        tileRect.y = (boardRect.h - (rows*tileRect.h)) / 2;
+        tileRect.x += tileRect.w - int((double)tileRect.w * tile_borderWidth);
+        tileRect.y += tileRect.h - int((double)tileRect.h * tile_borderHeight);
+        tileRect.y += tileRect.h * (rows-1);
     }
 
     // close textures
@@ -305,21 +331,14 @@ std::string Board::GetPromoMenuInput() {
 }
 
 void Board::GetTileDimensions(int& _w, int& _h) const {
-    SDL_Rect boardRect;
-    rm->FetchResource(boardRect, RectID::BOARD);
-    int tileWidth = int((1 - boardBorder*2) * (float)boardRect.w / columns);
-    int tileHeight = int((1 - boardBorder*2) * (float)boardRect.h / rows);
-
-    _w = tileWidth;
-    _h = tileHeight;
+    _w = topLeftTile.w;
+    _h = topLeftTile.h;
 }
 
 void Board::GetMinDimensions(int& _w, int& _h) const {
     _w = minBoardWidth + minInfoWidth + minMenuWidth;
     _h = minBoardWidth;
 }
-
-
 
 void Board::GetRowsColumns(int &_rows, int &_cols) {
     _rows = rows;
@@ -334,8 +353,8 @@ void Board::GetBoardBLPosition(int& _x, int& _y) const {
     SDL_Rect boardRect;
     rm->FetchResource(boardRect, RectID::BOARD);
 
-    _x = boardRect.x + int((double)boardRect.w * boardBorder);
-    _y = int((double)boardRect.h * (1-2*boardBorder));
+    _x = boardRect.x + topLeftTile.x;
+    _y = boardRect.y + topLeftTile.y + (topLeftTile.h*(rows-1));
 }
 
 void Board::GetTileRectFromPosition(SDL_Rect &rect, Position<char, int> position) const {

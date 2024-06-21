@@ -2,7 +2,7 @@
 // Created by cew05 on 16/06/2024.
 //
 
-#include "HomeScreen.h"
+#include "include/HomeScreen.h"
 
 /*
  * HomeScreen definitions
@@ -19,12 +19,22 @@ HomeScreen::HomeScreen() : AppScreen() {
 
     // Add buttons to main menu
     auto mmButtonMap = menu->AccessButtonManager();
-    button = new Button({screenRect.w/4, screenRect.h/2},
+    button = new Button({screenRect.w/4, screenRect.h/4},
                         {screenRect.w/2, screenRect.h/16},
-                        "Play against yourself, loner.");
+                        "Play against AI");
     mmButtonMap->NewResource(button, PLAY_VS_AI);
 
-    // add to manager
+    button = new Button({screenRect.w/4, 2*screenRect.h/4},
+                        {screenRect.w/2, screenRect.h/16},
+                        "Play on Local Network");
+    mmButtonMap->NewResource(button, PLAY_NETWORK);
+
+    button = new Button({screenRect.w/4, 3*screenRect.h/4},
+                        {screenRect.w/2, screenRect.h/16},
+                        "Review past games");
+    mmButtonMap->NewResource(button, REVIEW_GAMES);
+
+    // add menu to manager
     menuManager->NewResource(menu, MenuID::MAIN_MENU);
 
     // Add non-menu Button resources
@@ -40,6 +50,10 @@ void HomeScreen::HandleEvents() {
 }
 
 void HomeScreen::CheckButtons() {
+    bool ignoreInput;
+    stateManager->FetchResource(ignoreInput, NO_INPUT);
+    if (ignoreInput) return;
+
     Menu* menu;
     Button* button;
     GenericManager<Button*>* menuButtonManager;
@@ -51,8 +65,7 @@ void HomeScreen::CheckButtons() {
     // PLAY_VS_AI clicked
     menuButtonManager->FetchResource(button, PLAY_VS_AI);
     if (button->IsClicked()) {
-
-
+        stateManager->UpdateResource(true, NO_INPUT);
     }
 
     //... Rest of events

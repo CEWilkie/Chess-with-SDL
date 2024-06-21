@@ -5,7 +5,7 @@
 #ifndef CHESS_WITH_SDL_MENU_H
 #define CHESS_WITH_SDL_MENU_H
 
-#include "../src_headers/GlobalResources.h"
+#include "../../src_headers/GlobalResources.h"
 #include "Button.h"
 
 class Menu {

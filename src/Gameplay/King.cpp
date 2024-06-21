@@ -2,7 +2,7 @@
 // Created by cew05 on 09/05/2024.
 //
 
-#include "src_headers/King.h"
+#include "include/King.h"
 
 King::King(const std::string &_name, char _colID, Position<char, int> _gamepos)
 : Piece(_name, _colID,_gamepos) {

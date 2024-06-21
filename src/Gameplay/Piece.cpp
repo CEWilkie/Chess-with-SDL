@@ -2,7 +2,7 @@
 // Created by cew05 on 19/04/2024.
 //
 
-#include "src_headers/Piece.h"
+#include "include/Piece.h"
 
 Piece::Piece(const std::string& _name, char _colID, Position<char, int> _gamepos) {
     // set piece info values

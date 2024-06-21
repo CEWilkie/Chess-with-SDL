@@ -2,7 +2,7 @@
 // Created by cew05 on 19/06/2024.
 //
 
-#include "Menu.h"
+#include "include/Menu.h"
 
 Menu::Menu(std::pair<int, int> _position, std::pair<int, int> _size, const std::string &_title) {
     menuRect = {_position.first, _position.second, _size.first, _size.second};
@@ -81,10 +81,22 @@ bool Menu::CreateTextures() {
         destRect.y += destRect.h;
     }
 
-    SDL_Surface* surface = SDL_CreateRGBSurface(0, menuRect.w, menuRect.h, 32, 0, 0, 0, 0);
-    SDL_RenderReadPixels(window.renderer, nullptr, surface->format->format, surface->pixels, surface->pitch);
-    IMG_SavePNG(surface, "testMenu.png");
-    SDL_FreeSurface(surface);
+    // If the title is not empty, draw the title
+    if (!menuTitle.empty()) {
+        SDL_Surface *textSurface = TTF_RenderText_Blended(font, menuTitle.c_str(), {255, 255, 255, 255});
+        SDL_Texture *textTexture = SDL_CreateTextureFromSurface(window.renderer, textSurface);
+
+        // Resize texture
+        int labelW, labelH;
+        SDL_QueryTexture(textTexture, nullptr, nullptr, &labelW, &labelH);
+        sf = (double) labelH / (menuRect.h / 14.0);
+        labelH = int(menuRect.h / 14.0);
+        labelW = int((double) labelW / sf);
+
+        // Centralise label in button
+        destRect = {menuRect.w / 2 - labelW / 2, int(labelH/10), labelW, labelH};
+        SDL_RenderCopy(window.renderer, textTexture, nullptr, &destRect);
+    }
 
     // reset renderTarget
     SDL_SetRenderTarget(window.renderer, nullptr);

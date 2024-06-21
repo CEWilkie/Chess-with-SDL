@@ -10,25 +10,25 @@
 
 #include "src_headers/GlobalSource.h"
 #include "src_headers/GlobalResources.h"
-#include "src_headers/Board.h"
-#include "src_headers/Piece.h"
-#include "src_headers/SelectedPiece.h"
-#include "src_headers/Knight.h"
-#include "src_headers/Bishop.h"
-#include "src_headers/Rook.h"
-#include "src_headers/Queen.h"
-#include "src_headers/King.h"
-#include "Screen/HomeScreen.h"
+#include "Gameplay/include/Board.h"
+#include "Gameplay/include/Piece.h"
+#include "Gameplay/include/SelectedPiece.h"
+#include "Gameplay/include/Knight.h"
+#include "Gameplay/include/Bishop.h"
+#include "Gameplay/include/Rook.h"
+#include "Gameplay/include/Queen.h"
+#include "Gameplay/include/King.h"
+#include "Screen/include/HomeScreen.h"
+#include "Screen/include/GameScreen.h"
 
-int EnsureWindowSize(Board* _board) {
+int EnsureWindowSize() {
     // Fetch rect of current window properties
     SDL_Rect rect_current = {0, 0, 0, 0};
     SDL_GetWindowSize(window.window, &rect_current.w, &rect_current.h);
     //SDL_GetWindowPosition(Window.window, &rect_current.a, &rect_current.b);
 
     // fetch min size boundaries
-    int minW, minH;
-    _board->GetMinDimensions(minW, minH);
+    int minW = 700, minH = 500;
 
     // detect if window has changed size
     int changed = 0;
@@ -122,92 +122,14 @@ int main(int argc, char** argv) {
      *  CONSTRUCT GAME ELEMENTS
      */
 
-    // Construct Board
-    Board board;
-    board.CreateBoardTexture();
-
-    // Ensure GameData directory exists else end program
-    if (!board.GameDataDirectoryExists()) {
-        return 0;
-    }
-    board.ClearExcessGameFiles();
-    // Create game data files in dir
-    if (!board.CreateGameFiles()) {
-        printf("Error creating game files.\n");
-        return 0;
-    }
-
-    /*
-     * CONSTRUCT WHITE PIECES
-     */
-
-    std::vector<Piece*> all_pieces;
-    std::vector<Piece*> white_pieces;
-    std::vector<Piece*> black_pieces;
-
-    // Read standard board from file
-    std::fstream boardStandardFile("../RequiredFiles/BasicSetup.csv");
-    std::string pieceString;
-
-    std::vector<std::string> pieceElements;
-    char div = ',';
-    uint64_t splitpos;
-
-    while (std::getline(boardStandardFile, pieceString)) {
-        pieceElements.clear();
-
-        while ((splitpos = pieceString.find(div)) != std::string::npos) {
-            pieceElements.push_back(pieceString.substr(0, splitpos));
-            pieceString.erase(0, splitpos + 1);
-        }
-        pieceElements.push_back(pieceString);
-
-        // construct Piece from elements taken from file
-        Piece* newPiece = nullptr;
-        if (pieceElements[1] == "Pawn") {
-            newPiece = new Piece("Pawn", 'W', {});
-            newPiece = new Piece("Pawn", pieceElements[0][0], {(char)pieceElements[2][0], std::stoi(pieceElements[3])});
-        }
-        if (pieceElements[1] == "Knight") {
-            newPiece = new Knight("Knight", pieceElements[0][0], {(char)pieceElements[2][0], std::stoi(pieceElements[3])});
-        }
-        if (pieceElements[1] == "Bishop") {
-            newPiece = new Bishop("Bishop", pieceElements[0][0], {(char)pieceElements[2][0], std::stoi(pieceElements[3])});
-        }
-        if (pieceElements[1] == "Rook") {
-            newPiece = new Rook("Rook", pieceElements[0][0], {(char)pieceElements[2][0], std::stoi(pieceElements[3])});
-        }
-        if (pieceElements[1] == "King") {
-            newPiece = new King("King", pieceElements[0][0], {(char)pieceElements[2][0], std::stoi(pieceElements[3])});
-        }
-        if (pieceElements[1] == "Queen") {
-            newPiece = new Queen("Queen", pieceElements[0][0], {(char)pieceElements[2][0], std::stoi(pieceElements[3])});
-        }
-
-        if (newPiece != nullptr) {
-            newPiece->CreateTextures();
-            newPiece->GetRectOfBoardPosition(board);
-            (pieceElements[0][0] == 'W') ? white_pieces.push_back(newPiece) : black_pieces.push_back(newPiece);
-            all_pieces.push_back(newPiece);
-        }
-    }
-    boardStandardFile.close();
-
-    printf("CONSTRUCTED %zu WHITE PIECES, %zu BLACK PIECES, %zu TOTAL PIECES\n",
-           white_pieces.size(), black_pieces.size(), all_pieces.size());
-
-    board.WriteStartPositionsToFile(all_pieces);
-
-    /*
-     * CONSTRUCT ADDITIONAL
-     */
-
-    auto teamptr = &white_pieces;
-    auto oppptr = &black_pieces;
     SelectedPiece selectedPiece {};
 
-    HomeScreen mm;
-    mm.CreateTextures();
+    std::vector<AppScreen*> screens {};
+
+    HomeScreen ms;
+    GameScreen gs;
+    ms.CreateTextures();
+    gs.CreateTextures();
 
     bool running = true;
     bool eot = false;
@@ -225,7 +147,7 @@ int main(int argc, char** argv) {
 //        board.DisplayGameBoard();
 //
 //        // DisplayToggle Pieces and fetch their moves
-//        for (Piece* piece : all_pieces) {
+//        for (Piece* piece : allPieces) {
 //            piece->ClearMoves();
 //            piece->ClearNextMoves();
 //            piece->FetchMoves(*teamptr, *oppptr, board);
@@ -235,39 +157,26 @@ int main(int argc, char** argv) {
 //            piece->DisplayMoves(board);
 //        }
 
-        if (!mm.Display()) running = false;
+        //if (!ms.Display()) running = false;
+        if (!gs.Display()) running = false;
+
 
         /*
          * CHECKMATE + STALEMATE CHECKING
          * this is done after moves are fetched and confirmed
          */
 
-        // Check if team pieces have any available moves
-        bool canMove = std::any_of(teamptr->begin(), teamptr->end(), [](Piece *piece) {
-            return !piece->GetAvailableMovesPtr()->empty();
-        });
-
-//        // if there are no moves available, check if King is being checked by opp
-//        if (!canMove && std::any_of(oppptr->begin(), oppptr->end(), [](Piece *piece) {
-//            return piece->IsCheckingKing();
-//        })) {
-//            // conditions met: checkmate
-//            printf("CHECKMATE! 1:0");
-//            running = false;
-//        } else if (!canMove) {
-//            // conditions met: stalemate
-//            printf("STALEMATE! 0.5:0.5");
-//            running = false;
-//        }
 
         /*
          *  FETCH USER INPUT FROM EVENTS
          */
 
         // User input events
-        mm.HandleEvents();
-        mm.UpdateButtonStates();
-        mm.CheckButtons();
+        ms.HandleEvents();
+        ms.UpdateButtonStates();
+        ms.CheckButtons();
+
+
 
 
         /*
@@ -323,7 +232,7 @@ int main(int argc, char** argv) {
 //                        promotedPiece->GetRectOfBoardPosition(board);
 //
 //                        teamptr->push_back(promotedPiece);
-//                        all_pieces.push_back(promotedPiece);
+//                        allPieces.push_back(promotedPiece);
 //
 //                        promotedPiece->FetchMoves(*teamptr, *oppptr, board);
 //
@@ -335,7 +244,7 @@ int main(int argc, char** argv) {
 //
 //        if (eot && allTasksComplete) {
 //            // update checker vars
-//            for (auto piece : all_pieces) {
+//            for (auto piece : allPieces) {
 //                piece->UpdateCheckerVars();
 //            }
 //
@@ -353,7 +262,7 @@ int main(int argc, char** argv) {
          *  RECREATE TEXTURES IF REQUIRED
          */
 
-        int winSizeChanged = EnsureWindowSize(&board);
+        int winSizeChanged = EnsureWindowSize();
         if (winSizeChanged == 1) {
             // Update board size
 //            int w, h;
@@ -375,8 +284,11 @@ int main(int argc, char** argv) {
 //                piece->GetRectOfBoardPosition(board);
 //            }
 
-            mm.ResizeScreen();
-            mm.CreateTextures();
+            ms.ResizeScreen();
+            ms.CreateTextures();
+
+            gs.ResizeScreen();
+            gs.CreateTextures();
         }
 
 
@@ -392,7 +304,7 @@ int main(int argc, char** argv) {
          * CHECK FOR EXIT CONDITION
          */
 
-        if (mm.FetchScreenState(AppScreen::ScreenState::SCREEN_CLOSED)) running = false;
+        if (ms.FetchScreenState(AppScreen::ScreenState::SCREEN_CLOSED)) running = false;
     }
 
     SDL_Quit();

@@ -2,7 +2,7 @@
 // Created by cew05 on 19/06/2024.
 //
 
-#include "Button.h"
+#include "include/Button.h"
 
 Button::Button(std::pair<int, int> _position, std::pair<int, int> _size, const std::string &_label) {
     // Set local vars
@@ -117,10 +117,10 @@ bool Button::CreateTextures() {
         edgeRadius = drWidth / 2;
     }
 
-    SDL_Surface* surface = SDL_CreateRGBSurface(0, buttonRect.w, buttonRect.h, 32, 0, 0, 0, 0);
-    SDL_RenderReadPixels(window.renderer, nullptr, surface->format->format, surface->pixels, surface->pitch);
-    IMG_SavePNG(surface, "testButton.png");
-    SDL_FreeSurface(surface);
+//    SDL_Surface* surface = SDL_CreateRGBSurface(0, buttonRect.w, buttonRect.h, 32, 0, 0, 0, 0);
+//    SDL_RenderReadPixels(window.renderer, nullptr, surface->format->format, surface->pixels, surface->pitch);
+//    IMG_SavePNG(surface, "testButton.png");
+//    SDL_FreeSurface(surface);
 
     // reset renderTarget
     SDL_SetRenderTarget(window.renderer, nullptr);

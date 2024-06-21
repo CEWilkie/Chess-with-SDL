@@ -2,7 +2,7 @@
 // Created by cew05 on 28/04/2024.
 //
 
-#include "src_headers/SelectedPiece.h"
+#include "include/SelectedPiece.h"
 
 SelectedPiece::SelectedPiece() = default;
 

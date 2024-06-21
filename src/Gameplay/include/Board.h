@@ -14,8 +14,8 @@
 #include <chrono>
 #include <filesystem>
 
-#include "GlobalResources.h"
-#include "GlobalSource.h"
+#include "../../src_headers/GlobalResources.h"
+#include "../../src_headers/GlobalSource.h"
 #include "Piece.h"
 #include "ResourceManagers.h"
 
@@ -32,6 +32,7 @@ class Piece;
 class Board{
     private:
         // Game Board Dimensions / info
+        SDL_Rect topLeftTile {};
         static const int rows = 8;
         static const int columns = 8;
 
@@ -60,10 +61,12 @@ class Board{
 
     public:
         Board();
+
         int CreateBoardTexture();
-        void DisplayGameBoard();
         bool CreatePromoMenuTexture();
+        void DisplayGameBoard();
         void DisplayPromoMenu(Piece* _promotingPiece);
+
         std::string GetPromoMenuInput();
 
         // Getters

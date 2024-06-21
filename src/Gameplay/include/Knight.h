@@ -7,6 +7,8 @@
 
 #include "Piece.h"
 
+class Piece;
+
 class Knight : public Piece{
     private:
 
