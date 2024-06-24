@@ -3,21 +3,11 @@
 //
 
 #define SDL_MAIN_HANDLED
-#include <iostream>
 #include <SDL.h>
 #include <SDL_ttf.h>
-#include <fstream>
 
 #include "src_headers/GlobalSource.h"
 #include "src_headers/GlobalResources.h"
-#include "Gameplay/include/Board.h"
-#include "Gameplay/include/Piece.h"
-#include "Gameplay/include/SelectedPiece.h"
-#include "Gameplay/include/Knight.h"
-#include "Gameplay/include/Bishop.h"
-#include "Gameplay/include/Rook.h"
-#include "Gameplay/include/Queen.h"
-#include "Gameplay/include/King.h"
 #include "Screen/include/HomeScreen.h"
 #include "Screen/include/GameScreen.h"
 
@@ -116,8 +106,6 @@ int main(int argc, char** argv) {
         return -1;
     }
 
-
-
     /*
      *  CONSTRUCT SCREENS
      */
@@ -130,6 +118,10 @@ int main(int argc, char** argv) {
     GameScreen gs;
     ms.CreateTextures();
     gs.CreateTextures();
+
+    /*
+     * LOAD STOCKFISH
+     */
 
     bool running = true;
     while (running) {

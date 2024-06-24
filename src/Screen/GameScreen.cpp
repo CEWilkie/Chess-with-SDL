@@ -129,8 +129,8 @@ bool GameScreen::Display() {
 
     // Display Pieces
     for (Piece* piece : *allPieces) {
-        piece->DisplayPiece();
-        piece->DisplayMoves(*board);
+        piece->DisplayPiece(board);
+        piece->DisplayMoves(board);
     }
 
     return true;

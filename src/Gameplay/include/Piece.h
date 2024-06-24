@@ -80,6 +80,7 @@ class Piece {
 
         // pawn movements
         bool hasMoved = false;
+        int lastMoveDisplayTimer = 0;
         bool canPassant = false;
         int passantTimer = 0;
         bool canPromote = false;
@@ -104,8 +105,8 @@ class Piece {
         void GetRectOfBoardPosition( Board* _board);
 
         // Displaying piece / moves
-        void DisplayPiece();
-        void DisplayMoves(const Board& board);
+        void DisplayPiece(Board* _board);
+        void DisplayMoves(Board* _board);
 
         /*
          * Fetching and testing Moves
@@ -162,6 +163,7 @@ class Piece {
         /*
          * GETTERS
          */
+
         Piece_Info* GetPieceInfoPtr() { return info; };
         std::vector<AvailableMove>* GetAvailableMovesPtr() { return &validMoves; };
         bool HasMoved() const { return hasMoved; };

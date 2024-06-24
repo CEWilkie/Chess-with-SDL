@@ -68,7 +68,7 @@ void Piece::GetRectOfBoardPosition(Board* _board) {
 
 // Displaying Piece / Moves
 
-void Piece::DisplayPiece() {
+void Piece::DisplayPiece(Board* _board) {
     // Don't display piece if captured
     if (captured) return;
 
@@ -82,12 +82,27 @@ void Piece::DisplayPiece() {
         SDL_RenderCopy(window.renderer, texture, nullptr, &rect);
     }
 
+    // Show the move made by the piece if it just moved
+    if (lastMoveDisplayTimer > 0) {
+        // last position
+        _board->GetTileRectFromPosition(rect, info->lastpos);
+        SDL_SetRenderDrawColor(window.renderer, 0, 0, 150, 30);
+        SDL_RenderFillRect(window.renderer, &rect);
+        SDL_SetRenderDrawColor(window.renderer, 0, 0, 0, 0);
+
+        // new position
+        rm->FetchResource(rect, RectID::BOARDPOS_RECT);
+        SDL_SetRenderDrawColor(window.renderer, 0, 0, 150, 75);
+        SDL_RenderFillRect(window.renderer, &rect);
+        SDL_SetRenderDrawColor(window.renderer, 0, 0, 0, 0);
+    }
+
     texture = tm->AccessTexture(info->textureID);
     rm->FetchResource(rect, RectID::PIECE_RECT);
     SDL_RenderCopy(window.renderer, texture, nullptr, &rect);
 }
 
-void Piece::DisplayMoves(const Board& board) {
+void Piece::DisplayMoves(Board* _board) {
     /*
      * When the piece is selected, will display the valid moves listed in the validMoves vector
      */
@@ -96,7 +111,7 @@ void Piece::DisplayMoves(const Board& board) {
 
     for (AvailableMove move : validMoves) {
         SDL_Rect moveRect = {0, 0};
-        board.GetBorderedRectFromPosition(moveRect, move.GetPosition());
+        _board->GetBorderedRectFromPosition(moveRect, move.GetPosition());
 
         // if the move is a capture (except if capturing same team rook as this is a castling move) then use diff icon
         SDL_Texture* moveIcon = tm->AccessTexture(MOVE);
@@ -354,6 +369,7 @@ void Piece::MoveTo(Position<char, int> _movepos, Board* _board) {
     }
 
     // Update game position and movement values
+    lastMoveDisplayTimer = 2;
     info->lastpos = info->gamepos;
     info->gamepos = _movepos;
     hasMoved = true;
@@ -365,6 +381,7 @@ void Piece::MoveTo(Position<char, int> _movepos, Board* _board) {
 void Piece::UpdateCheckerVars() {
     passantTimer -= 1;
     canPassant = passantTimer > 0;
+    lastMoveDisplayTimer -= 1;
 }
 
 void Piece::Captured(bool _captured) {
