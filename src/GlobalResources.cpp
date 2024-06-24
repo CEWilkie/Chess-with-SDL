@@ -55,6 +55,9 @@ bool InitTextures() {
     tm->NewTexture(nullptr, PROMO_BLACK_COMPILED);
     tm->NewTexture(nullptr, PROMO_WHITE_COMPILED);
 
+    // Set to default board texture style
+    BOARD_STYLE = BOARD_STYLES[0];
+
     /*
      * Construct ButtonID Textures
      */
@@ -105,6 +108,9 @@ bool InitTextures() {
     tm->NewTexture(dirPath + "/Piece/Attacking_Piece.png", CAPTURE);
     tm->NewTexture(dirPath + "/Piece/Available_Space.png", MOVE);
     tm->NewTexture(dirPath + "/Piece/Selected_Target.png", SELECTED);
+
+    // Set to default piece style
+    PIECE_STYLE = PIECE_STYLES[0];
 
     return true;
 }

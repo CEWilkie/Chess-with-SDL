@@ -38,7 +38,7 @@ class SelectedPiece {
         void CreateACNstring(std::vector<Piece*>* _teamptr);
 
         // Making a move
-        void MakeMove(const Board* _board);
+        void MakeMove(Board* _board);
 
         // Getters
         Piece* GetSelectedPiece() { return selectedPiece; };

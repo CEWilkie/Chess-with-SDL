@@ -11,16 +11,19 @@
 
 class GameScreen : public AppScreen {
     private:
-        enum MenuID : int {
-            MAIN_MENU
+        enum GameState : int {
+            SHOW_PROMO_MENU = LAST_SCREEN_STATE, END_OF_TURN, ALL_TASKS_COMPLETE,
         };
+        enum MenuID : int {
 
+        };
         enum buttonID : int {
-            PLAY_VS_AI, PLAY_NETWORK, REVIEW_GAMES,
+
         };
 
         // Pointers to board and pieces
         Board* board;
+        SelectedPiece* selectedPiece = new SelectedPiece();
         std::vector<Piece*>* allPieces = new std::vector<Piece*>;
         std::vector<Piece*>* whitePieces = new std::vector<Piece*>;
         std::vector<Piece*>* blackPieces = new std::vector<Piece*>;

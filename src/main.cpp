@@ -28,7 +28,7 @@ int EnsureWindowSize() {
     //SDL_GetWindowPosition(Window.window, &rect_current.a, &rect_current.b);
 
     // fetch min size boundaries
-    int minW = 700, minH = 500;
+    int minW = 1020, minH = 540;
 
     // detect if window has changed size
     int changed = 0;
@@ -103,23 +103,23 @@ int main(int argc, char** argv) {
     SDL_ClearError();
 
     /*
-     * CREATE TEXTURES
+     * CREATE TEXTURES AND CONFIG FILES
      */
 
+    // Initialise textures
     InitFonts();
     InitTextures();
     SetStyles();
 
-    /*
-     * CONFIG FILES
-     */
-
+    // Fetch and set config settings
     if (!ConfigExists()) {
         return -1;
     }
 
+
+
     /*
-     *  CONSTRUCT GAME ELEMENTS
+     *  CONSTRUCT SCREENS
      */
 
     SelectedPiece selectedPiece {};
@@ -132,8 +132,6 @@ int main(int argc, char** argv) {
     gs.CreateTextures();
 
     bool running = true;
-    bool eot = false;
-    bool allTasksComplete = true;
     while (running) {
         // Clear screen
         SDL_RenderClear(window.renderer);
@@ -142,121 +140,18 @@ int main(int argc, char** argv) {
          *  DRAW TO SCREEN
          */
 
-//        // DisplayToggle Board and Background
-//        SDL_RenderCopy(window.renderer, window.background, nullptr, &window.currentRect);
-//        board.DisplayGameBoard();
-//
-//        // DisplayToggle Pieces and fetch their moves
-//        for (Piece* piece : allPieces) {
-//            piece->ClearMoves();
-//            piece->ClearNextMoves();
-//            piece->FetchMoves(*teamptr, *oppptr, board);
-//            piece->PreventMoveIntoCheck(*teamptr, *oppptr, board);
-//
-//            piece->DisplayPiece();
-//            piece->DisplayMoves(board);
-//        }
-
         //if (!ms.Display()) running = false;
         if (!gs.Display()) running = false;
 
-
         /*
-         * CHECKMATE + STALEMATE CHECKING
-         * this is done after moves are fetched and confirmed
+         *  USER INPUT AND HANDLE EVENTS
          */
 
-
-        /*
-         *  FETCH USER INPUT FROM EVENTS
-         */
-
-        // User input events
         ms.HandleEvents();
         ms.UpdateButtonStates();
         ms.CheckButtons();
 
-
-
-
-        /*
-         * EVENT MANAGEMENT - MOVES AND PIECE SELECTION CHECKING
-         */
-
-        // check if user has clicked on a move
-//        if (selectedPiece.CheckForMoveClicked(&board)) {
-//            // make move
-//            selectedPiece.MakeMove(&board);
-//            eot = true;
-//        }
-//
-//        // check if user clicks on a piece
-//        if (!eot) selectedPiece.CheckForPieceClicked(teamptr);
-//
-//        /*
-//         *  END OF TURN MANAGEMENT
-//         */
-//
-//        // Do promotion if pawn has reached the end tile
-//        if (eot) {
-//            for (auto piece : *teamptr) {
-//                if (piece->ReadyToPromote()) {
-//                    allTasksComplete = false;
-//
-//                    // Fetch user input for promotion
-//                    board.DisplayPromoMenu(piece);
-//
-//                    Piece* promotedPiece = nullptr;
-//                    std::string promoteTo = board.GetPromoMenuInput();
-//                    Piece_Info* pi = piece->GetPieceInfoPtr();
-//
-//                    if (promoteTo == "Knight") {
-//                        promotedPiece = new Knight("Knight", pi->colID, pi->gamepos);
-//                    }
-//                    else if (promoteTo == "Bishop") {
-//                        promotedPiece = new Bishop("Bishop", pi->colID, pi->gamepos);
-//                    }
-//                    else if (promoteTo == "Rook") {
-//                        promotedPiece = new Rook("Rook", pi->colID, pi->gamepos);
-//                    }
-//                    else if (promoteTo == "Queen"){
-//                        promotedPiece = new Queen("Queen", pi->colID, pi->gamepos);
-//                    }
-//
-//                    if (promotedPiece != nullptr) {
-//                        // Piece has been made, mark pawn as captured and add new piece to teamptr
-//                        piece->Captured(true);
-//                        piece->UpdatePromoteInfo(promotedPiece);
-//
-//                        promotedPiece->CreateTextures();
-//                        promotedPiece->GetRectOfBoardPosition(board);
-//
-//                        teamptr->push_back(promotedPiece);
-//                        allPieces.push_back(promotedPiece);
-//
-//                        promotedPiece->FetchMoves(*teamptr, *oppptr, board);
-//
-//                        allTasksComplete = true;
-//                    }
-//                }
-//            }
-//        }
-//
-//        if (eot && allTasksComplete) {
-//            // update checker vars
-//            for (auto piece : allPieces) {
-//                piece->UpdateCheckerVars();
-//            }
-//
-//            // Create and get the lastMove string
-//            selectedPiece.CreateACNstring(teamptr);
-//            board.WriteMoveToFile(selectedPiece.GetACNMoveString());
-//
-//            std::swap(teamptr, oppptr);
-//            board.IncrementTurn();
-//
-//            eot = false;
-//        }
+        gs.HandleEvents();
 
         /*
          *  RECREATE TEXTURES IF REQUIRED
@@ -264,26 +159,9 @@ int main(int argc, char** argv) {
 
         int winSizeChanged = EnsureWindowSize();
         if (winSizeChanged == 1) {
-            // Update board size
-//            int w, h;
-//            SDL_GetWindowSize(window.window, &w, &h);
-//            board.FillToBounds(w, h);
+
         }
         if (winSizeChanged != 0){
-            // board
-//            board.CreateBoardTexture();
-//            board.CreatePromoMenuTexture();
-//
-//            // white pieces
-//            for (Piece* piece : white_pieces) {
-//                piece->GetRectOfBoardPosition(board);
-//            }
-//
-//            // black pieces
-//            for (Piece* piece : black_pieces) {
-//                piece->GetRectOfBoardPosition(board);
-//            }
-
             ms.ResizeScreen();
             ms.CreateTextures();
 
@@ -295,8 +173,6 @@ int main(int argc, char** argv) {
         /*
          *  UPDATE SCREEN
          */
-
-        // Example background Fill
 
         SDL_RenderPresent(window.renderer);
 

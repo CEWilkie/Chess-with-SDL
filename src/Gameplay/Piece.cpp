@@ -32,7 +32,6 @@ Piece::Piece(const std::string& _name, char _colID, Position<char, int> _gamepos
     rm->NewResource({0, 0, 0, 0}, RectID::PIECE_RECT);
     rm->NewResource({0, 0, 0, 0}, RectID::BOARDPOS_RECT);
 
-
     // Pawn info, direction of movement, and canPromote status
     dir = (info->colID == 'W') ? 1 : -1;
     canPromote = (info->name == "Pawn");
@@ -48,13 +47,22 @@ int Piece::CreateTextures() {
     /*
      * Create the textures for move highlights, the piece model
      */
+
     return 0;
 }
 
-void Piece::GetRectOfBoardPosition(const Board& board) {
+void Piece::SetRects(Board *_board) {
     SDL_Rect rect;
-    rm->FetchResource(rect, RectID::BOARDPOS_RECT);
-    board.GetBorderedRectFromPosition(rect, info->gamepos);
+    _board->GetBorderedRectFromPosition(rect, info->gamepos);
+    rm->UpdateResource(rect, RectID::BOARDPOS_RECT);
+
+    _board->GetBorderedRectFromPosition(rect, info->gamepos);
+    rm->UpdateResource(rect, RectID::PIECE_RECT);
+}
+
+void Piece::GetRectOfBoardPosition(Board* _board) {
+    SDL_Rect rect;
+    _board->GetBorderedRectFromPosition(rect, info->gamepos);
     rm->UpdateResource(rect, RectID::BOARDPOS_RECT);
 }
 
@@ -65,18 +73,18 @@ void Piece::DisplayPiece() {
     if (captured) return;
 
     // temp vars
-    SDL_Texture* tempTexture;
-    SDL_Rect tempRect;
+    SDL_Texture* texture;
+    SDL_Rect rect;
 
     if(selected) {
-        tempTexture = tm->AccessTexture(SELECTED);
-        rm->FetchResource(tempRect, RectID::BOARDPOS_RECT);
-        SDL_RenderCopy(window.renderer, tempTexture, nullptr, &tempRect);
+        texture = tm->AccessTexture(SELECTED);
+        rm->FetchResource(rect, RectID::BOARDPOS_RECT);
+        SDL_RenderCopy(window.renderer, texture, nullptr, &rect);
     }
 
-    tempTexture = tm->AccessTexture(info->textureID);
-    rm->FetchResource(tempRect, RectID::PIECE_RECT);
-    SDL_RenderCopy(window.renderer, tempTexture, nullptr, &tempRect);
+    texture = tm->AccessTexture(info->textureID);
+    rm->FetchResource(rect, RectID::PIECE_RECT);
+    SDL_RenderCopy(window.renderer, texture, nullptr, &rect);
 }
 
 void Piece::DisplayMoves(const Board& board) {
@@ -334,7 +342,7 @@ Piece* Piece::GetPieceOnPosition(const std::vector<Piece *> &_teamPieces, const 
 
 // Making / Testing a move
 
-void Piece::MoveTo(Position<char, int> _movepos, const Board &_board) {
+void Piece::MoveTo(Position<char, int> _movepos, Board* _board) {
     // prevent moves when captured
     if  (captured) return;
 
@@ -351,7 +359,7 @@ void Piece::MoveTo(Position<char, int> _movepos, const Board &_board) {
     hasMoved = true;
 
     // Remake rect
-    GetRectOfBoardPosition(_board);
+    SetRects(_board);
 }
 
 void Piece::UpdateCheckerVars() {
@@ -364,10 +372,6 @@ void Piece::Captured(bool _captured) {
     captured = _captured;
 
     // Close textures
-    tm->CloseTexture(info->textureID);
-    tm->CloseTexture(MOVE);
-    tm->CloseTexture(CAPTURE);
-    tm->CloseTexture(SELECTED);
 }
 
 void Piece::TempMoveTo(AvailableMove* _tempmove) {

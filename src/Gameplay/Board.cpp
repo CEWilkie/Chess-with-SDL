@@ -56,7 +56,7 @@ int Board::CreateBoardTexture() {
     // Draw Board Base texture
     tempTexture = tm->AccessTexture(TextureID(BOARD_BASE + BOARD_STYLE.second));
     if (SDL_RenderCopy(window.renderer, tempTexture, nullptr, nullptr) != 0) {
-        printf("%s\n", tm->GetIssueString(tm->GetIssue()).c_str());
+        printf("%s\n", TextureManager::GetIssueString(tm->GetIssue()).c_str());
         LogError("Failed to copy base texture", SDL_GetError(), false);
         return -1;
     }
@@ -74,7 +74,7 @@ int Board::CreateBoardTexture() {
     tileRect.y = (boardRect.h - (rows*tileRect.h)) / 2;
 
     // Store tile
-    topLeftTile = tileRect;
+    topLeftTile = {tileRect.x, tileRect.y, tileRect.w, tileRect.h};
 
     // Now draw board grid pattern
     for (int r = 0; r < rows; r++) {
@@ -130,7 +130,6 @@ int Board::CreateBoardTexture() {
             labelRect.w = int((float)labelSize.first / heightRatio);
 
             // adjust for space above / below the character
-            printf("FONT HEIGHT %d FONT ASCENT %d\n", TTF_FontHeight(font), TTF_FontAscent(font));
             if (axis == 0) labelRect.y -= int(double(TTF_FontHeight(font) - TTF_FontAscent(font)) / heightRatio);
             else labelRect.y -= int((double)TTF_FontDescent(font) / heightRatio);
 
@@ -359,31 +358,27 @@ void Board::GetBoardBLPosition(int& _x, int& _y) const {
 
 void Board::GetTileRectFromPosition(SDL_Rect &rect, Position<char, int> position) const {
     // Get rect of a1
-    SDL_Rect boardRect;
-    rm->FetchResource(boardRect, RectID::BOARD);
-    GetBoardBLPosition(rect.x, rect.y);
     GetTileDimensions(rect.w, rect.h);
+    GetBoardBLPosition(rect.x, rect.y);
 
     // now move x and y to position
+    SDL_Rect boardRect;
+    rm->FetchResource(boardRect, RectID::BOARD);
     rect.x += (rect.w * (std::tolower(position.x)-'a'));
     rect.y -= (rect.h * (position.y - 1));
 }
 
 void Board::GetBorderedRectFromPosition(SDL_Rect &_rect, Position<char, int> _position) const {
     // Get rect of a tile on a position without border
-    GetTileDimensions(_rect.w, _rect.h);
     GetTileRectFromPosition(_rect, _position);
 
-    int bWidth = int((double)_rect.w * tile_borderWidth);
-    int bHeight = int((double)_rect.h * tile_borderHeight);
+    // move the tl position of _rect by borderSize of tileWidth/tileHeight to centre the _rect
+    _rect.x += int((double)_rect.w * tile_borderWidth);
+    _rect.y += int((double)_rect.h * tile_borderHeight);
 
     // now apply 10% border to the rect
-    _rect.w -= 2 * bWidth;
-    _rect.h -= 2 * bHeight;
-
-    // now move the tl of _rect by 10% of tileWidth/tileHeight to centre the _rect
-    _rect.x += bWidth;
-    _rect.y += bHeight;
+    _rect.w = int((double)_rect.w * (1-2*tile_borderWidth));
+    _rect.h = int((double)_rect.h * (1-2*tile_borderHeight));
 }
 
 /*

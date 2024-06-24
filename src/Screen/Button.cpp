@@ -16,9 +16,15 @@ Button::Button(std::pair<int, int> _position, std::pair<int, int> _size, const s
     buttonTextures->NewTexture(nullptr, ButtonTexture::CLICKED);
 }
 
-Button::Button(std::pair<int, int> _position, std::pair<int, int> _size, ButtonTexture _iconID) :
+Button::Button(std::pair<int, int> _position, std::pair<int, int> _size, int _iconID) :
         Button(_position, _size, "") {
     // set local vars
+    iconID = _iconID;
+}
+
+Button::Button(std::pair<int, int> _position, std::pair<int, int> _size, int _iconID, bool _externIcon) :
+        Button(_position, _size, ""){
+    usingButtonIcon = false;
     iconID = _iconID;
 }
 
@@ -100,14 +106,23 @@ bool Button::CreateTextures() {
             SDL_RenderCopy(window.renderer, textTexture, nullptr, &destRect);
         }
 
-        // since label is empty, check that an icon can be loaded to draw
+        // Check for drawing an icon, and if the icon is part of the global texture manager
         if (iconID != ButtonTexture::ICON_NONE) {
-            srcRect.x = 4*srcRect.w;
-            srcRect.y = (((int)iconID - (int)ButtonTexture::ICON_NONE) - 1) * srcRect.h;
+            if (!usingButtonIcon) {
+                SDL_Texture* iconTexture = tm->AccessTexture(iconID);
 
-            // Centralise the icon
-            destRect = {buttonRect.w/2 - buttonRect.h / 2, 0, buttonRect.h, buttonRect.h};
-            SDL_RenderCopy(window.renderer, buttonSheet, &srcRect, &destRect);
+                // Centralise the icon
+                destRect = {buttonRect.w/2 - buttonRect.h / 2, 0, buttonRect.h, buttonRect.h};
+                SDL_RenderCopy(window.renderer, buttonSheet, nullptr, &destRect);
+            }
+            else {
+                srcRect.x = 4*srcRect.w;
+                srcRect.y = (((int)iconID - (int)ButtonTexture::ICON_NONE) - 1) * srcRect.h;
+
+                // Centralise the icon
+                destRect = {buttonRect.w/2 - buttonRect.h / 2, 0, buttonRect.h, buttonRect.h};
+                SDL_RenderCopy(window.renderer, buttonSheet, &srcRect, &destRect);
+            }
         }
 
         ButtonTexture ids[] = {ButtonTexture::NORMAL, ButtonTexture::HOVER, ButtonTexture::CLICKED};

@@ -100,7 +100,8 @@ class Piece {
          */
         // Creating textures
         int CreateTextures();
-        void GetRectOfBoardPosition(const Board& board);
+        void SetRects(Board* _board);
+        void GetRectOfBoardPosition( Board* _board);
 
         // Displaying piece / moves
         void DisplayPiece();
@@ -138,7 +139,7 @@ class Piece {
          */
 
         // Making a move / Testing a move
-        void MoveTo(Position<char, int> _movepos, const Board& _board);
+        void MoveTo(Position<char, int> _movepos, Board* _board);
         virtual void UpdateCheckerVars();
         void Captured(bool captured = true);
         void TempMoveTo(AvailableMove* _tempmove);

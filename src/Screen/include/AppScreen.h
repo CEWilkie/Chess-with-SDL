@@ -51,7 +51,7 @@ class AppScreen {
 
         // Fetch states
         enum ScreenState : int {
-            SCREEN_CLOSED, NO_INPUT,
+            SCREEN_CLOSED, NO_INPUT, LAST_SCREEN_STATE,
         };
         [[nodiscard]] bool FetchScreenState(int _stateID);
 };

@@ -23,7 +23,9 @@ class Button {
 
         // ButtonID display
         std::string label;
-        ButtonTexture iconID;
+        int iconID;
+        bool usingButtonIcon = true;
+
         float textBorder = 0.1;
         bool lockRatio = true;
         bool lockSize = false;
@@ -39,7 +41,8 @@ class Button {
 
     public:
         Button(std::pair<int, int> _position, std::pair<int, int> _size, const std::string &_label);
-        Button(std::pair<int, int> _position, std::pair<int, int> _size, ButtonTexture _iconID);
+        Button(std::pair<int, int> _position, std::pair<int, int> _size, int _iconID);
+        Button(std::pair<int, int> _position, std::pair<int, int> _size, int _iconID, bool _externIcon);
 
         // Display
         bool CreateTextures();

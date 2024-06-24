@@ -188,7 +188,7 @@ void SelectedPiece::GetACNMoveString(std::string &_move) {
     _move = lastMoveACN;
 }
 
-void SelectedPiece::MakeMove(const Board* _board) {
+void SelectedPiece::MakeMove(Board* _board) {
     // Moves the selected Piece
 
     // Store pieceInfo into vars before moving piece
@@ -203,7 +203,7 @@ void SelectedPiece::MakeMove(const Board* _board) {
     }
 
     // move selected piece
-    selectedPiece->MoveTo(selectedMove->GetPosition(), *_board);
+    selectedPiece->MoveTo(selectedMove->GetPosition(), _board);
     selectedPiece->ClearMoves();
 
     // Castling moves and Capturing moves both have a target piece to handle
@@ -215,7 +215,7 @@ void SelectedPiece::MakeMove(const Board* _board) {
 
             // rook must now swap to the opposite side of the king
             int dx = (target->GetPieceInfoPtr()->gamepos.x < pi->gamepos.x) ? 1 : -1;
-            target->MoveTo({char(pi->gamepos.x + dx), pi->gamepos.y}, *_board);
+            target->MoveTo({char(pi->gamepos.x + dx), pi->gamepos.y}, _board);
         } else {
             //move is to capture a target, mark target as captured
             selectedMove->GetTarget()->Captured(true);
