@@ -87,6 +87,7 @@ class Board{
         bool CreateGameFiles();
         bool WriteStartPositionsToFile(const std::vector<Piece*> &_allPieces);
         bool WriteMoveToFile(const std::string& _move);
+        void CreateFEN(const std::vector<Piece*>* _allPieces);
         void IncrementTurn();
 };
 

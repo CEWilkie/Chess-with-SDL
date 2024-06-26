@@ -283,3 +283,43 @@ void GameScreen::HandleEvents() {
 void GameScreen::CheckButtons() {
     AppScreen::CheckButtons();
 }
+
+
+void GameScreen::GetOpponentAIMove() {
+    // Fetch the move as given by stockfish from command line background process
+    // ensure that settings for elo + skill level are given
+
+    // Decode move
+
+    // Do promotion if required
+
+    // ...
+
+
+
+
+    // No implementation of fishbot yet, so just pick a random move
+
+    // Get number of uncaptured pieces
+    int p = 0;
+    for (auto piece : *oppptr) {
+        if (!piece->IsCaptured()) p++;
+    }
+
+
+
+    for (auto piece : *oppptr) {
+        std::random_device rd;
+        std::mt19937 mt(rd());
+
+        auto availableMoves = piece->GetAvailableMovesPtr();
+        std::shuffle(availableMoves->begin(), availableMoves->end(), mt);
+
+        availableMoves->back();
+    }
+
+}
+
+void GameScreen::GetOpponentNetworkMove() {
+    // Fetch the local network multiplayer opponents move
+}

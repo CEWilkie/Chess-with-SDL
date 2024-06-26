@@ -5,6 +5,7 @@
 #ifndef CHESS_WITH_SDL_GAMESCREEN_H
 #define CHESS_WITH_SDL_GAMESCREEN_H
 
+#include <random>
 #include "AppScreen.h"
 #include "../../Gameplay/include/Board.h"
 #include "../../Gameplay/include/IncludePieces.h"
@@ -36,13 +37,16 @@ class GameScreen : public AppScreen {
         // Game setup
         void SetUpPieces();
 
+        // Display
         bool CreateTextures() override;
         bool Display() override;
-
         void ResizeScreen() override;
 
+        // Handle events
         void HandleEvents() override;
         void CheckButtons() override;
+        void GetOpponentAIMove();
+        void GetOpponentNetworkMove();
 };
 
 

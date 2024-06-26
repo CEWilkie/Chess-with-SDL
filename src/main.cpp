@@ -6,10 +6,20 @@
 #include <SDL.h>
 #include <SDL_ttf.h>
 
+#include <boost/process.hpp>
+
 #include "src_headers/GlobalSource.h"
 #include "src_headers/GlobalResources.h"
 #include "Screen/include/HomeScreen.h"
 #include "Screen/include/GameScreen.h"
+
+bool StockFish(char** argv) {
+
+
+    return true;
+}
+
+
 
 int EnsureWindowSize() {
     // Fetch rect of current window properties
@@ -121,6 +131,14 @@ int main(int argc, char** argv) {
 
     /*
      * LOAD STOCKFISH
+     */
+
+    if (StockFish(argv)) {
+    }
+
+
+    /*
+     * GAMELOOP
      */
 
     bool running = true;
