@@ -233,6 +233,7 @@ void SelectedPiece::MakeMove(Piece *_piece, AvailableMove *_move, Board *_board)
     // calls primary MakeMove function using board ptr
 
     selectedPiece = _piece;
+    selectedPieceInfo = _piece->GetPieceInfoPtr();
     selectedMove = _move;
 
     MakeMove(_board);

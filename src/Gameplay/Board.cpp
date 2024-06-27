@@ -595,7 +595,7 @@ bool Board::WriteMoveToFile(const std::string& _move) {
         return false;
     }
 
-    if (halfturns == 0) mlFile << std::endl << currentTurn << ". ";
+    if (halfturns % 2 == 0) mlFile << std::endl << currentTurn << ". ";
     mlFile << _move << " ";
 
     mlFile.close();
