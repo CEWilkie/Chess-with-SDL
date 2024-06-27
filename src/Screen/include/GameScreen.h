@@ -31,9 +31,13 @@ class GameScreen : public AppScreen {
         std::vector<Piece*>* blackPieces = new std::vector<Piece*>;
         std::vector<Piece*>* teamptr = nullptr;
         std::vector<Piece*>* oppptr = nullptr;
+        std::vector<Piece*>* userTeamPtr = nullptr;
 
         // Stockfish
         StockfishManager* sfm = nullptr;
+
+        // Turn management
+        bool usersTurn;
 
     public:
         GameScreen(char _teamID);
@@ -42,8 +46,6 @@ class GameScreen : public AppScreen {
         // Game setup
         void SetUpPieces();
         void SetupEngine(bool _limitStrength, int _elo, int _level);
-        std::string FetchOpponentMove();
-        void FetchOpponentMoveEngine();
 
         // Display
         bool CreateTextures() override;
@@ -53,8 +55,8 @@ class GameScreen : public AppScreen {
         // Handle events
         void HandleEvents() override;
         void CheckButtons() override;
-        void GetOpponentAIMove();
-        void GetOpponentNetworkMove();
+        std::string FetchOpponentMove();
+        std::string FetchOpponentMoveEngine();
 };
 
 

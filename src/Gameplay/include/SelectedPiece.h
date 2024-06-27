@@ -39,6 +39,7 @@ class SelectedPiece {
 
         // Making a move
         void MakeMove(Board* _board);
+        void MakeMove(Piece* _piece, AvailableMove* _move, Board* _board);
 
         // Getters
         Piece* GetSelectedPiece() { return selectedPiece; };

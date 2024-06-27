@@ -227,3 +227,13 @@ void SelectedPiece::MakeMove(Board* _board) {
     selectedPiece->UnselectPiece();
     selectedPiece = nullptr;
 }
+
+void SelectedPiece::MakeMove(Piece *_piece, AvailableMove *_move, Board *_board) {
+    // sets selected piece to passed piece, selected move to passed move, and
+    // calls primary MakeMove function using board ptr
+
+    selectedPiece = _piece;
+    selectedMove = _move;
+
+    MakeMove(_board);
+}

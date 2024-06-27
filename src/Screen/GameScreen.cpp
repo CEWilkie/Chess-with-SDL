@@ -33,9 +33,18 @@ GameScreen::GameScreen(char _teamID) : AppScreen() {
 
     board->WriteStartPositionsToFile(*allPieces);
 
-    // Set team pointers according to user's teamID
-    teamptr = (_teamID == 'W') ? whitePieces : blackPieces;
-    oppptr = (_teamID == 'W') ? blackPieces : whitePieces;
+    // Set users team pointer
+    if (_teamID == 'W') {
+        userTeamPtr = whitePieces;
+        usersTurn = true;
+    }
+    else {
+        userTeamPtr = blackPieces;
+        usersTurn = false;
+    }
+
+    teamptr = whitePieces;
+    oppptr = blackPieces;
 
     // Set states
     stateManager->NewResource(false, SHOW_PROMO_MENU);
@@ -151,6 +160,46 @@ std::string GameScreen::FetchOpponentMove() {
     return FENstr;
 }
 
+std::string GameScreen::FetchOpponentMoveEngine() {
+    // Get FEN of current position
+    std::string FENstr = board->CreateFEN(*whitePieces, *blackPieces);
+    //printf("GET MOVE FROM FEN %s\n", FENstr.c_str());
+
+    if (sfm == nullptr) {
+        SetupEngine(true, 1500, 10);
+    }
+
+    std::string cmd;
+
+    // Get response to request to find bestmove
+    cmd = "position fen " + FENstr + "\n";
+    sfm->DoFunction(cmd);
+
+    sfm->DoFunction("go depth 10\n");
+
+    // read lines of response untill finding "bestmove ..." line
+    std::string response = sfm->FetchResult(), line;
+    char delim = '\n';
+    size_t pos = response.find(delim);
+
+    while ((line = response.substr(0, pos+1)).find("bestmove") == std::string::npos) {
+        response.erase(0, pos+1);
+        if (response.empty()) response = sfm->FetchResult();
+        pos = response.find(delim);
+    }
+
+    // convert response string into only movestring [targetpos][destpos][promoteTo]
+    delim = ' ';
+    pos = line.find(delim);
+    line.erase(0, pos+1);
+    //printf("DEBUG REMOVE BESTMOVE [%s]\n", line.c_str());
+
+    pos = line.find(delim);
+    line.erase(pos, std::string::npos);
+    //printf("DEBUG REMOVE BESTMOVE [%s]\n", line.c_str());
+
+    return line;
+}
 
 bool GameScreen::CreateTextures() {
     if (!AppScreen::CreateTextures()) return false;
@@ -246,27 +295,57 @@ void GameScreen::HandleEvents() {
     }
 
     /*
-     * HANDLE INPUT FOR MOVES
+     * HANDLE USER INPUT FOR MOVES
      */
 
-    // check if user has clicked on a move
-    if (selectedPiece->CheckForMoveClicked(board)) {
-        // make move
-        selectedPiece->MakeMove(board);
+    if (usersTurn) {
+        // check if user has clicked on a move
+        if (selectedPiece->CheckForMoveClicked(board)) {
+            // make move
+            selectedPiece->MakeMove(board);
+            eot = true;
+        }
+
+        // check if user clicks on a piece
+        if (!eot) {
+            selectedPiece->CheckForPieceClicked(userTeamPtr);
+        }
+    }
+
+    /*
+     * HANDLE OPPONENT INPUT FOR MOVES
+     */
+
+    if (!usersTurn) {
+        // [position of piece][destination position][promotion] needs to be converted into an actual move
+        std::string basicMoveStr = FetchOpponentMoveEngine();
+        printf("movegiven : %s\n", basicMoveStr.c_str());
+
+        Position<char, int> pos = {basicMoveStr[0], basicMoveStr[1] - '0'};
+        Position<char, int> target = {basicMoveStr[2], basicMoveStr[3] - '0'};
+        Piece* movPiece = Piece::GetTeamPieceOnPosition(*teamptr, pos);
+        if (movPiece == nullptr) {
+            // Big issue!!!!
+            printf("failed to find moving piece at %c%d. CHECK FEN STRING\n", pos.x, pos.y);
+        }
+        else {
+            for (auto move : *movPiece->GetAvailableMovesPtr()) {
+                if (target.x == move.GetPosition().x && target.y == move.GetPosition().y) {
+                    selectedPiece->MakeMove(movPiece, &move, board);
+                }
+            }
+        }
+
         eot = true;
     }
 
-    // check if user clicks on a piece
-    if (!eot) {
-        selectedPiece->CheckForPieceClicked(teamptr);
-    }
 
     /*
      * PROMOTIONS
      */
 
-    if (eot) {
-        for (auto piece : *teamptr) {
+    if (eot && usersTurn) {
+        for (auto piece : *userTeamPtr) {
             if (piece->ReadyToPromote()) {
                 allTasksComplete = false;
 
@@ -328,7 +407,8 @@ void GameScreen::HandleEvents() {
         board->IncrementTurn();
         eot = false;
 
-        FetchOpponentMove();
+        // change turn
+        usersTurn = !usersTurn;
     }
 
     // Update states
@@ -338,44 +418,4 @@ void GameScreen::HandleEvents() {
 
 void GameScreen::CheckButtons() {
     AppScreen::CheckButtons();
-}
-
-
-void GameScreen::GetOpponentAIMove() {
-    // Fetch the move as given by stockfish from command line background process
-    // ensure that settings for elo + skill level are given
-
-    // Decode move
-
-    // Do promotion if required
-
-    // ...
-
-
-
-
-    // No implementation of fishbot yet, so just pick a random move
-
-    // Get number of uncaptured pieces
-    int p = 0;
-    for (auto piece : *oppptr) {
-        if (!piece->IsCaptured()) p++;
-    }
-
-
-
-    for (auto piece : *oppptr) {
-        std::random_device rd;
-        std::mt19937 mt(rd());
-
-        auto availableMoves = piece->GetAvailableMovesPtr();
-        std::shuffle(availableMoves->begin(), availableMoves->end(), mt);
-
-        availableMoves->back();
-    }
-
-}
-
-void GameScreen::GetOpponentNetworkMove() {
-    // Fetch the local network multiplayer opponents move
 }
