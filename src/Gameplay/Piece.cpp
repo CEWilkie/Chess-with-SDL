@@ -54,16 +54,16 @@ int Piece::CreateTextures() {
 void Piece::SetRects(Board *_board) {
     SDL_Rect rect;
     _board->GetBorderedRectFromPosition(rect, info->gamepos);
-    rm->UpdateResource(rect, RectID::BOARDPOS_RECT);
+    rm->ChangeResource(rect, RectID::BOARDPOS_RECT);
 
     _board->GetBorderedRectFromPosition(rect, info->gamepos);
-    rm->UpdateResource(rect, RectID::PIECE_RECT);
+    rm->ChangeResource(rect, RectID::PIECE_RECT);
 }
 
 void Piece::GetRectOfBoardPosition(Board* _board) {
     SDL_Rect rect;
     _board->GetBorderedRectFromPosition(rect, info->gamepos);
-    rm->UpdateResource(rect, RectID::BOARDPOS_RECT);
+    rm->ChangeResource(rect, RectID::BOARDPOS_RECT);
 }
 
 // Displaying Piece / Moves

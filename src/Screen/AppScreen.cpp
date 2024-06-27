@@ -88,7 +88,7 @@ void AppScreen::HandleEvents() {
     SDL_Event event;
     while (SDL_PollEvent(&event) != 0) {
         if (event.type == SDL_QUIT) {
-            stateManager->UpdateResource(true, SCREEN_CLOSED);
+            stateManager->ChangeResource(true, SCREEN_CLOSED);
         }
         if (event.type == SDL_MOUSEBUTTONDOWN) {
             mouse.MouseDown(true);

@@ -248,7 +248,7 @@ bool Board::CreatePromoMenuTexture() {
     promoRect.y = boardRect.h/2 - promoRect.h/2;
 
     // update stored promoRect
-    rm->UpdateResource(promoRect, RectID::PROMO_MENU);
+    rm->ChangeResource(promoRect, RectID::PROMO_MENU);
 
     // Load textures
     tm->CloseTexture(TextureID(PROMO_BASE + BOARD_STYLE.second));
@@ -423,7 +423,7 @@ void Board::FillToBounds(int _w, int _h) {
         }
 
         // Update stored rect
-        rm->UpdateResource(rect, rectIDs[id]);
+        rm->ChangeResource(rect, rectIDs[id]);
     }
 }
 

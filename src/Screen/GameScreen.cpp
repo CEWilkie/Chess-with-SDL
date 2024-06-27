@@ -217,7 +217,7 @@ void GameScreen::HandleEvents() {
                 allTasksComplete = false;
 
                 // show promo menu
-                stateManager->UpdateResource(true, SHOW_PROMO_MENU);
+                stateManager->ChangeResource(true, SHOW_PROMO_MENU);
 
                 Piece* promotedPiece = nullptr;
                 std::string promoteTo = board->GetPromoMenuInput();
@@ -250,7 +250,7 @@ void GameScreen::HandleEvents() {
                     promotedPiece->FetchMoves(*teamptr, *oppptr, *board);
 
                     allTasksComplete = true;
-                    stateManager->UpdateResource(false, SHOW_PROMO_MENU);
+                    stateManager->ChangeResource(false, SHOW_PROMO_MENU);
                 }
             }
         }
@@ -276,8 +276,8 @@ void GameScreen::HandleEvents() {
     }
 
     // Update states
-    stateManager->UpdateResource(eot, END_OF_TURN);
-    stateManager->UpdateResource(allTasksComplete, ALL_TASKS_COMPLETE);
+    stateManager->ChangeResource(eot, END_OF_TURN);
+    stateManager->ChangeResource(allTasksComplete, ALL_TASKS_COMPLETE);
 }
 
 void GameScreen::CheckButtons() {

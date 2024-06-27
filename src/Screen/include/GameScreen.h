@@ -9,6 +9,7 @@
 #include "AppScreen.h"
 #include "../../Gameplay/include/Board.h"
 #include "../../Gameplay/include/IncludePieces.h"
+#include "../../StockfishUtil/StockfishManager.h"
 
 class GameScreen : public AppScreen {
     private:
@@ -32,7 +33,7 @@ class GameScreen : public AppScreen {
         std::vector<Piece*>* oppptr = nullptr;
 
         // Stockfish
-
+        StockfishManager* sfm = nullptr;
 
     public:
         GameScreen();

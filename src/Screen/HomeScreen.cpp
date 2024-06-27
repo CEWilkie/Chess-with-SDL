@@ -65,7 +65,7 @@ void HomeScreen::CheckButtons() {
     // PLAY_VS_AI clicked
     menuButtonManager->FetchResource(button, PLAY_VS_AI);
     if (button->IsClicked()) {
-        stateManager->UpdateResource(true, NO_INPUT);
+        stateManager->ChangeResource(true, NO_INPUT);
     }
 
     //... Rest of events
