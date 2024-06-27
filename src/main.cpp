@@ -6,7 +6,8 @@
 #include <SDL.h>
 #include <SDL_ttf.h>
 
-#include <boost/process.hpp>
+#include <windows.h>
+#include "StockfishUtil/StockfishManager.h"
 
 #include "src_headers/GlobalSource.h"
 #include "src_headers/GlobalResources.h"
@@ -14,7 +15,12 @@
 #include "Screen/include/GameScreen.h"
 
 bool StockFish(char** argv) {
+    StockfishManager sfm {};
+    sfm.DoFunction("uci\n");
+    printf("%s\n", sfm.FetchResult().c_str());
 
+    sfm.DoFunction("isready\n");
+    printf("%s\n", sfm.FetchResult().c_str());
 
     return true;
 }

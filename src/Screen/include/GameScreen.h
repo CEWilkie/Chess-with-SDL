@@ -31,6 +31,9 @@ class GameScreen : public AppScreen {
         std::vector<Piece*>* teamptr = nullptr;
         std::vector<Piece*>* oppptr = nullptr;
 
+        // Stockfish
+
+
     public:
         GameScreen();
 
