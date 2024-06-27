@@ -604,13 +604,13 @@ bool Board::WriteMoveToFile(const std::string& _move) {
 
 std::string Board::CreateFEN(const std::vector<Piece *> &_whitePieces, const std::vector<Piece *> &_blackPieces) const {
     // Create FEN string for current position
-    Position<char, int> position {'h',8};
+    Position<char, int> position {'a',8};
     Piece* posPiece;
     std::string FENstr {};
     int nEmptyTiles = 0;
 
     while (position.y > 0) {
-        while (position.x >= 'a') {
+        while (position.x <= 'h') {
             posPiece = Piece::GetPieceOnPosition(_whitePieces, _blackPieces, position);
             if (posPiece != nullptr) {
                 // write in number of empty tiles since last posPiece on row
@@ -619,7 +619,7 @@ std::string Board::CreateFEN(const std::vector<Piece *> &_whitePieces, const std
 
                 // Get posPiece info to fetch id from
                 auto pieceInfo = posPiece->GetPieceInfoPtr();
-                if (pieceInfo->colID == 'W') {
+                if (pieceInfo->colID == 'B') {
                     if (pieceInfo->name == "Pawn") FENstr += "p";
                     else FENstr += (char)tolower(pieceInfo->pieceID);
                 }
@@ -634,7 +634,7 @@ std::string Board::CreateFEN(const std::vector<Piece *> &_whitePieces, const std
             }
 
 
-            position.x = char(position.x - 1);
+            position.x = char(position.x + 1);
         }
 
         // write in number of empty tiles since last posPiece on row
@@ -644,9 +644,12 @@ std::string Board::CreateFEN(const std::vector<Piece *> &_whitePieces, const std
         // indicate next row
         FENstr += '/';
 
-        position.x = 'h';
+        position.x = 'a';
         position.y--;
     }
+
+    // remove last /
+    FENstr.pop_back();
 
     // Check whos currentTurn
     FENstr += ((halfturns == 0) ? " w " : " b ");

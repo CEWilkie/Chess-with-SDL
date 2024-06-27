@@ -17,7 +17,6 @@
 #include "../../src_headers/GlobalResources.h"
 #include "../../src_headers/GlobalSource.h"
 #include "Piece.h"
-#include "King.h"
 #include "ResourceManagers.h"
 
 /*

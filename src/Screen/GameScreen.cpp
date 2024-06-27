@@ -144,7 +144,11 @@ void GameScreen::SetupEngine(bool _limitStrength, int _elo, int _level) {
 }
 
 std::string GameScreen::FetchOpponentMove() {
+    // Get FEN of current position
+    std::string FENstr = board->CreateFEN(*whitePieces, *blackPieces);
+    printf("%s\n", FENstr.c_str());
 
+    return FENstr;
 }
 
 
@@ -323,6 +327,8 @@ void GameScreen::HandleEvents() {
         std::swap(teamptr, oppptr);
         board->IncrementTurn();
         eot = false;
+
+        FetchOpponentMove();
     }
 
     // Update states

@@ -123,7 +123,7 @@ int main(int argc, char** argv) {
 
     GameScreen gs('W');
     gs.CreateTextures();
-    gs.SetupEngine(true, 1320, 10);
+    //gs.SetupEngine(true, 1320, 10);
 
 
     /*
