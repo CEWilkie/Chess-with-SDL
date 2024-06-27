@@ -88,6 +88,10 @@ class Piece {
         Piece* promotedTo = nullptr;
         int dir = 1;
 
+        // Castling for King
+        bool canCastleKingside = false;
+        bool canCastleQueenside = false;
+
         // user input detection
         bool selected = false;
         bool followMouse = false;
@@ -168,6 +172,13 @@ class Piece {
         std::vector<AvailableMove>* GetAvailableMovesPtr() { return &validMoves; };
         bool HasMoved() const { return hasMoved; };
         bool IsCaptured() const { return captured; };
+        bool CanPassant() const { return canPassant; };
+        Position<char, int> GetPassantTarget() const {
+            return {info->gamepos.x, info->gamepos.y - dir};
+        };
+
+        // should be moved to child
+        std::pair<bool, bool> CanCastle();
 };
 
 /*

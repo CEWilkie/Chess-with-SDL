@@ -7,10 +7,11 @@
 
 #include "Piece.h"
 
+
+
 class King : public Piece{
     private:
-        bool canCastleKingside = true;
-        bool canCastleQueenside = true;
+
 
     public:
         King(const std::string& _name, char _colID, Position<char, int> _gamepos);

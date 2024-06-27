@@ -14,19 +14,6 @@
 #include "Screen/include/HomeScreen.h"
 #include "Screen/include/GameScreen.h"
 
-bool StockFish(char** argv) {
-    StockfishManager sfm {};
-    sfm.DoFunction("uci\n");
-    printf("%s\n", sfm.FetchResult().c_str());
-
-    sfm.DoFunction("isready\n");
-    printf("%s\n", sfm.FetchResult().c_str());
-
-    return true;
-}
-
-
-
 int EnsureWindowSize() {
     // Fetch rect of current window properties
     SDL_Rect rect_current = {0, 0, 0, 0};
@@ -131,17 +118,17 @@ int main(int argc, char** argv) {
     std::vector<AppScreen*> screens {};
 
     HomeScreen ms;
-    GameScreen gs;
     ms.CreateTextures();
+
+
+    GameScreen gs('W');
     gs.CreateTextures();
+    gs.SetupEngine(true, 1320, 10);
+
 
     /*
      * LOAD STOCKFISH
      */
-
-    if (StockFish(argv)) {
-    }
-
 
     /*
      * GAMELOOP

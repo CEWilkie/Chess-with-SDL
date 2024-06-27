@@ -4,7 +4,7 @@
 
 #include "include/GameScreen.h"
 
-GameScreen::GameScreen() : AppScreen() {
+GameScreen::GameScreen(char _teamID) : AppScreen() {
     // Temp vars
     Menu* menu;
     Button* button;
@@ -33,9 +33,9 @@ GameScreen::GameScreen() : AppScreen() {
 
     board->WriteStartPositionsToFile(*allPieces);
 
-    teamptr = whitePieces;
-    oppptr = blackPieces;
-
+    // Set team pointers according to user's teamID
+    teamptr = (_teamID == 'W') ? whitePieces : blackPieces;
+    oppptr = (_teamID == 'W') ? blackPieces : whitePieces;
 
     // Set states
     stateManager->NewResource(false, SHOW_PROMO_MENU);
@@ -43,6 +43,14 @@ GameScreen::GameScreen() : AppScreen() {
     stateManager->NewResource(true, ALL_TASKS_COMPLETE);
 }
 
+GameScreen::~GameScreen() {
+    // Ensure stockfish process is closed
+    if (sfm != nullptr) {
+        delete sfm;
+        sfm = nullptr;
+    }
+
+}
 
 void GameScreen::SetUpPieces() {
     // Read standard board from file
@@ -95,6 +103,48 @@ void GameScreen::SetUpPieces() {
 
     printf("CONSTRUCTED %zu WHITE PIECES, %zu BLACK PIECES, %zu TOTAL PIECES\n",
            whitePieces->size(), blackPieces->size(), allPieces->size());
+}
+
+void GameScreen::SetupEngine(bool _limitStrength, int _elo, int _level) {
+    std::string funcStr;
+
+    // Setup stockfish
+    if (sfm == nullptr) {
+        printf("WARNING SUBPROCESS STOCKFISH OPENED, CHECK FOR CLOSURE ON PROGRAM END\n");
+        sfm = new StockfishManager();
+    }
+    else {
+        // SF already opened, indicate a new game by setting the start position
+        funcStr = "position startpos\n";
+        sfm->DoFunction(funcStr);
+    }
+
+    // pass commands to set engine difficulty
+    funcStr = "setoption name UCI_LimitStrength value ";
+    funcStr += ((_limitStrength) ? "true\n" : "false\n");
+    sfm->DoFunction(funcStr);
+
+    if (_limitStrength) {
+        // ensure min/max elo bounds not exceeded
+        _elo = std::min(_elo, 3190);
+        _elo = std::max(_elo, 1320);
+        funcStr = "setoption name UCI_Elo value " + std::to_string(_elo) + "\n";
+        sfm->DoFunction(funcStr);
+
+        // ensure min/max skill level bounds not exceeded
+        _level = std::min(_level, 20);
+        _level = std::max(_level, 0);
+        funcStr = "setoption name Skill Level value " + std::to_string(_level) + "\n";
+        sfm->DoFunction(funcStr);
+    }
+
+    funcStr = "setoption name UCI_LimitStrength value ";
+    funcStr += ((_limitStrength) ? "true\n" : "false\n");
+    sfm->DoFunction(funcStr);
+}
+
+std::string GameScreen::FetchOpponentMove() {
+
 }
 
 

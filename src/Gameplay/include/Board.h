@@ -17,6 +17,7 @@
 #include "../../src_headers/GlobalResources.h"
 #include "../../src_headers/GlobalSource.h"
 #include "Piece.h"
+#include "King.h"
 #include "ResourceManagers.h"
 
 /*
@@ -56,8 +57,8 @@ class Board{
         std::string startPosFilePath;
         std::string timeFormat = "%d_%m_%Y_%H_%M_%S";
         std::string timeStringFormat = "dd_mm_yyyyThh:mm:ssZ";
-        int numEots = 0;
-        int turn = 1;
+        int halfturns = 0;
+        int currentTurn = 1;
 
     public:
         Board();
@@ -87,7 +88,7 @@ class Board{
         bool CreateGameFiles();
         bool WriteStartPositionsToFile(const std::vector<Piece*> &_allPieces);
         bool WriteMoveToFile(const std::string& _move);
-        void CreateFEN(const std::vector<Piece*>* _allPieces);
+        std::string CreateFEN(const std::vector<Piece *> &_whitePieces, const std::vector<Piece *> &_blackPieces) const;
         void IncrementTurn();
 };
 

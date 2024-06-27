@@ -474,11 +474,11 @@ void Board::ClearExcessGameFiles() {
         if (pathTimeString.length() >= timeStringFormat.size() - 1) {
             pathTimeString.erase(timeStringFormat.size() -1, std::string::npos);
 
-            // now turn into structtm, >> is highlighted as an error yet works???
+            // now currentTurn into structtm, >> is highlighted as an error yet works???
             std::istringstream ss(pathTimeString);
             ss >> std::get_time(&structtm, timeFormat.c_str());
 
-            // turn into time_t which can be stored then compared
+            // currentTurn into time_t which can be stored then compared
             pathTime.b = mktime(&structtm);
 
         } else {
@@ -595,17 +595,125 @@ bool Board::WriteMoveToFile(const std::string& _move) {
         return false;
     }
 
-    if (numEots == 0) mlFile << std::endl << turn << ". ";
+    if (halfturns == 0) mlFile << std::endl << currentTurn << ". ";
     mlFile << _move << " ";
 
     mlFile.close();
     return true;
 }
 
+std::string Board::CreateFEN(const std::vector<Piece *> &_whitePieces, const std::vector<Piece *> &_blackPieces) const {
+    // Create FEN string for current position
+    Position<char, int> position {'h',8};
+    Piece* posPiece;
+    std::string FENstr {};
+    int nEmptyTiles = 0;
+
+    while (position.y > 0) {
+        while (position.x >= 'a') {
+            posPiece = Piece::GetPieceOnPosition(_whitePieces, _blackPieces, position);
+            if (posPiece != nullptr) {
+                // write in number of empty tiles since last posPiece on row
+                if (nEmptyTiles > 0) FENstr += std::to_string(nEmptyTiles);
+                nEmptyTiles = 0;
+
+                // Get posPiece info to fetch id from
+                auto pieceInfo = posPiece->GetPieceInfoPtr();
+                if (pieceInfo->colID == 'W') {
+                    if (pieceInfo->name == "Pawn") FENstr += "p";
+                    else FENstr += (char)tolower(pieceInfo->pieceID);
+                }
+                else {
+                    if (pieceInfo->name == "Pawn") FENstr += "P";
+                    else FENstr += pieceInfo->pieceID;
+                }
+            }
+            else {
+                // no posPiece, denote blank space
+                nEmptyTiles += 1;
+            }
+
+
+            position.x = char(position.x - 1);
+        }
+
+        // write in number of empty tiles since last posPiece on row
+        if (nEmptyTiles > 0) FENstr += std::to_string(nEmptyTiles);
+        nEmptyTiles = 0;
+
+        // indicate next row
+        FENstr += '/';
+
+        position.x = 'h';
+        position.y--;
+    }
+
+    // Check whos currentTurn
+    FENstr += ((halfturns == 0) ? " w " : " b ");
+
+    // White castling status
+    bool castlePossible = false;
+
+    for (auto piece : _whitePieces) {
+        if (piece->GetPieceInfoPtr()->pieceID == 'K') {
+            auto canCastle = piece->CanCastle();
+
+            if (canCastle.second) FENstr += 'K';
+            if (canCastle.first) FENstr += 'Q';
+
+            if (canCastle.first || canCastle.second) castlePossible = true;
+            break;
+        }
+    }
+
+     // Black castling status
+    for (auto piece : _blackPieces) {
+        if (piece->GetPieceInfoPtr()->pieceID == 'K') {
+            auto canCastle = piece->CanCastle();
+
+            if (canCastle.second) FENstr += 'k';
+            if (canCastle.first) FENstr += 'q';
+
+            if (canCastle.first || canCastle.second) castlePossible = true;
+            break;
+        }
+    }
+
+    // no castling possible
+    if (!castlePossible) FENstr += '-';
+
+    // now denote possible en passant targets
+    for (auto piece : _whitePieces) {
+        Position<char, int> target {};
+        if (piece->CanPassant()) {
+            target = piece->GetPassantTarget();
+            FENstr += " ";
+            FENstr += target.x;
+            FENstr += std::to_string(target.y);
+            break;
+        }
+    }
+
+    for (auto piece : _blackPieces) {
+        Position<char, int> target {};
+        if (piece->CanPassant()) {
+            target = piece->GetPassantTarget();
+            FENstr += " ";
+            FENstr += target.x;
+            FENstr += std::to_string(target.y);
+            break;
+        }
+    }
+
+    // num halfturns num turns
+    FENstr += " " + std::to_string(halfturns) + " " + std::to_string(currentTurn);
+
+    return FENstr;
+}
+
 void Board::IncrementTurn() {
-    numEots += 1;
-    if (numEots == 2) {
-        numEots = 0;
-        turn += 1;
+    halfturns += 1;
+    if ((halfturns % 2) == 0) {
+        currentTurn += 1;
     }
 }

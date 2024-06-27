@@ -36,10 +36,14 @@ class GameScreen : public AppScreen {
         StockfishManager* sfm = nullptr;
 
     public:
-        GameScreen();
+        GameScreen(char _teamID);
+        ~GameScreen();
 
         // Game setup
         void SetUpPieces();
+        void SetupEngine(bool _limitStrength, int _elo, int _level);
+        std::string FetchOpponentMove();
+        void FetchOpponentMoveEngine();
 
         // Display
         bool CreateTextures() override;

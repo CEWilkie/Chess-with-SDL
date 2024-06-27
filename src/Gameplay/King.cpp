@@ -6,6 +6,8 @@
 
 King::King(const std::string &_name, char _colID, Position<char, int> _gamepos)
 : Piece(_name, _colID,_gamepos) {
+    canCastleQueenside = true;
+    canCastleKingside = true;
 }
 
 void King::FetchMoves(const std::vector<Piece *> &_teamPieces, const std::vector<Piece *> &_oppPieces,
@@ -14,7 +16,7 @@ void King::FetchMoves(const std::vector<Piece *> &_teamPieces, const std::vector
      * King moves are in the 8 tiles surrounding him
      * [_][_][_][_][_]
      * [_][a][a][a][_]
-     * [_][a][Key][a][_]
+     * [_][a][K][a][_]
      * [_][a][a][a][_]
      * [_][_][_][_][_]
      * However, he cannot enter a position where he is being checked (targeted by another piece)
@@ -53,33 +55,35 @@ void King::FetchMoves(const std::vector<Piece *> &_teamPieces, const std::vector
      * moves two spaces, and move the rook to the opposite side of the King.
      */
 
+    if (!canCastleKingside && !canCastleQueenside) return;
+
     // construct castling move
     AvailableMove castleKS {}, castleQS;
     castleKS.SetPosition({char(info->gamepos.x + 2), info->gamepos.y});
     castleQS.SetPosition({char(info->gamepos.x - 2), info->gamepos.y});
-    canCastleKingside = !hasMoved;
-    canCastleQueenside = !hasMoved;
+    bool castleKingsideNow = true;
+    bool castleQueensideNow = true;
 
     // checking that no space is checked or occupied
     for (int dx = -2; dx < 3; dx++){
         for (auto piece: _oppPieces) {
             if (piece->IsTargetingPosition({char(info->gamepos.x + dx), info->gamepos.y})) {
                 // piece is targeting one of the spaces, cannot currently castle
-                (dx < 0) ? canCastleQueenside = false : canCastleKingside = false;
+                (dx < 0) ? castleQueensideNow = false : castleKingsideNow = false;
             }
         }
 
         if (GetPieceOnPosition(_teamPieces, _oppPieces, {char(info->gamepos.x + dx), info->gamepos.y}) != nullptr) {
             // Piece is on the position, cannot castle
-            (dx < 0) ? canCastleQueenside = false : canCastleKingside = false;
+            (dx < 0) ? castleQueensideNow = false : castleKingsideNow = false;
         }
 
-        // skip over dx = 0, as dx++ occurs right after this
+        // skip over dx = 0 as thats the kings position
         if (dx == -1) dx = 0;
     }
 
     // test the closest first rook on the Kingside for captured / moved
-    if (canCastleKingside){
+    if (castleKingsideNow){
         for (char dx = info->gamepos.x; dx < 'i'; dx++) {
             auto piece = GetTeamPieceOnPosition(_teamPieces, {dx, info->gamepos.y});
             if (piece == nullptr) continue;
@@ -93,12 +97,16 @@ void King::FetchMoves(const std::vector<Piece *> &_teamPieces, const std::vector
                     validMoves.push_back(castleKS);
                     break;
                 }
+                else {
+                    // The rook has moved, mark unable to castle kingside
+                    canCastleKingside = false;
+                }
             }
         }
     }
 
     // test the closest first rook on the Queenside for captured / moved
-    if (canCastleQueenside) {
+    if (castleQueensideNow) {
         for (char dx = info->gamepos.x; dx >= 'a'; dx--) {
             auto piece = GetTeamPieceOnPosition(_teamPieces, {dx, info->gamepos.y});
             if (piece == nullptr) continue;
@@ -111,6 +119,10 @@ void King::FetchMoves(const std::vector<Piece *> &_teamPieces, const std::vector
                     castleQS.SetTarget(piece);
                     validMoves.push_back(castleQS);
                     break;
+                }
+                else {
+                    // The rook has moved, mark unable to castle queenside
+                    canCastleQueenside = false;
                 }
             }
         }

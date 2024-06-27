@@ -42,6 +42,11 @@ StockfishManager::StockfishManager() {
 
     // Fetch initialisation string to confirm success
     printf("INIT : %s\n", FetchResult().c_str());
+
+    DoFunction("uci\n");
+    printf("%s\n", FetchResult().c_str());
+    DoFunction("isready\n");
+    printf("%s\n", FetchResult().c_str());
 }
 
 StockfishManager::~StockfishManager() {

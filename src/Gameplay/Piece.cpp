@@ -453,3 +453,7 @@ bool Piece::UpdateSelected() {
 void Piece::UnselectPiece() {
     selected = false;
 }
+
+std::pair<bool, bool> Piece::CanCastle() {
+    return {canCastleQueenside, canCastleKingside};
+}
