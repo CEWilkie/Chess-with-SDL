@@ -5,7 +5,7 @@
 #ifndef CHESS_WITH_SDL_APPSCREEN_H
 #define CHESS_WITH_SDL_APPSCREEN_H
 
-#include "SDL_ttf.h"
+#include <SDL_ttf.h>
 
 #include "../../src_headers/GlobalSource.h"
 #include "Menu.h"
@@ -51,9 +51,21 @@ class AppScreen {
 
         // Fetch states
         enum ScreenState : int {
-            SCREEN_CLOSED, NO_INPUT, LAST_SCREEN_STATE,
+            SCREEN_CLOSED, WINDOW_CLOSED, NO_INPUT, LAST_SCREEN_STATE,
         };
         [[nodiscard]] bool FetchScreenState(int _stateID);
+        void UpdateState(bool _state, int _stateID);
 };
+
+
+
+// Container for the Appscreen Children
+
+enum Screen : int {
+    HOMESCREEN, GAMESCREEN,
+};
+
+inline GenericManager<AppScreen*>* screenManager = new GenericManager<AppScreen*>;
+inline AppScreen* currentScreen = nullptr;
 
 #endif //CHESS_WITH_SDL_APPSCREEN_H

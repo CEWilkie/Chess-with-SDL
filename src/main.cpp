@@ -113,28 +113,35 @@ int main(int argc, char** argv) {
      *  CONSTRUCT SCREENS
      */
 
-    SelectedPiece selectedPiece {};
+    // Home screen / Main Menu for the user
+    HomeScreen hs;
+    hs.CreateTextures();
 
-    std::vector<AppScreen*> screens {};
+    screenManager->NewResource(&hs, HOMESCREEN);
 
-    HomeScreen ms;
-    ms.CreateTextures();
-
+    // Provides view of the gameboard during gameplay vs ai / network / game review
     GameScreen gs('W');
     gs.CreateTextures();
+
+    // Later should move this
     gs.SetupEngine(true, 1320, 10);
 
+    screenManager->NewResource(&gs, GAMESCREEN);
 
-    /*
-     * LOAD STOCKFISH
-     */
+    // Loop utilises pointer to the current screen. Prevents multiple screens from attempting to manage events which
+    // can lead to conflicts. Appscreen vector holds pointers to all current screens.
+    screenManager->FetchResource(currentScreen, HOMESCREEN);
 
     /*
      * GAMELOOP
      */
 
+    // Set initial values of vars
     frameTick.currTick = SDL_GetTicks64();
     bool running = true;
+
+    // Loop
+
     while (running) {
         // Update ticks
         frameTick.lastTick = frameTick.currTick;
@@ -148,18 +155,18 @@ int main(int argc, char** argv) {
          *  DRAW TO SCREEN
          */
 
-        //if (!ms.Display()) running = false;
-        if (!gs.Display()) running = false;
+        if (!currentScreen->Display())
+            running = false;
 
         /*
          *  USER INPUT AND HANDLE EVENTS
          */
 
-        //ms.HandleEvents();
-        ms.UpdateButtonStates();
-        ms.CheckButtons();
-
-        gs.HandleEvents();
+        // Handle events called first as this updates MouseInput vars (such as mouse down) required for updating button
+        // states
+        currentScreen->HandleEvents();
+        currentScreen->UpdateButtonStates();
+        currentScreen->CheckButtons();
 
         /*
          *  RECREATE TEXTURES IF REQUIRED
@@ -167,16 +174,12 @@ int main(int argc, char** argv) {
 
         int winSizeChanged = EnsureWindowSize();
         if (winSizeChanged == 1) {
-
+            // ...
         }
         if (winSizeChanged != 0){
-            ms.ResizeScreen();
-            ms.CreateTextures();
-
-            gs.ResizeScreen();
-            gs.CreateTextures();
+            currentScreen->ResizeScreen();
+            currentScreen->CreateTextures();
         }
-
 
         /*
          *  UPDATE SCREEN
@@ -188,10 +191,7 @@ int main(int argc, char** argv) {
          * CHECK FOR EXIT CONDITION
          */
 
-        if (ms.FetchScreenState(AppScreen::ScreenState::SCREEN_CLOSED)) running = false;
-        if (gs.FetchScreenState(AppScreen::ScreenState::SCREEN_CLOSED)) running = false;
-        if (gs.FetchScreenState(GameScreen::GameState::CHECKMATE) ||
-                gs.FetchScreenState(GameScreen::GameState::STALEMATE)) running = false;
+        if (currentScreen->FetchScreenState(AppScreen::ScreenState::WINDOW_CLOSED)) running = false;
     }
 
     SDL_Quit();

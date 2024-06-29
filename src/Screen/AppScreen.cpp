@@ -13,6 +13,7 @@ AppScreen::AppScreen() {
 
     // Create base states
     stateManager->NewResource(false, SCREEN_CLOSED);
+    stateManager->NewResource(false, WINDOW_CLOSED);
     stateManager->NewResource(false, NO_INPUT);
 
     // Create texture for background
@@ -42,6 +43,10 @@ bool AppScreen::LoadScreen() {
 }
 
 bool AppScreen::Display() {
+    bool screenClosed = false;
+    stateManager->FetchResource(screenClosed, SCREEN_CLOSED);
+    if (screenClosed) return true;
+
     // Display background
     SDL_SetRenderDrawColor(window.renderer, 0, 150, 150, 255);
     SDL_RenderFillRect(window.renderer, &window.currentRect);
@@ -73,6 +78,11 @@ void AppScreen::ResizeScreen() {
 
 
 void AppScreen::UpdateButtonStates() {
+    // If ignoreInput, return
+    bool ignoreInput;
+    stateManager->FetchResource(ignoreInput, NO_INPUT);
+    if (ignoreInput) return;
+
     // Update buttons in menus
     for (auto& menu : *menuManager->AccessMap()) {
         menu.second->UpdateButtonStates();
@@ -90,7 +100,7 @@ void AppScreen::HandleEvents() {
     while (SDL_PollEvent(&event) != 0) {
         // Check for window close
         if (event.type == SDL_QUIT) {
-            stateManager->ChangeResource(true, SCREEN_CLOSED);
+            stateManager->ChangeResource(true, WINDOW_CLOSED);
             break;
         }
 
@@ -108,7 +118,6 @@ void AppScreen::HandleEvents() {
     }
 
     mouse.Update();
-    //mouse.PrintStates();
 }
 
 
@@ -118,6 +127,17 @@ void AppScreen::CheckButtons() {
 
 bool AppScreen::FetchScreenState(int _stateID) {
     bool result;
-    stateManager->FetchResource(result, _stateID);
+    if (!stateManager->FetchResource(result, _stateID)) {
+        result = false;
+        printf("FAILED TO FETCH ID %d CAUSE : %s\n", _stateID, GenericManager<bool>::GetIssueString(stateManager->GetIssue()).c_str());
+    }
     return result;
+}
+
+void AppScreen::UpdateState(bool _state, int _stateID) {
+    if (!stateManager->ResourceExists(_stateID)) {
+        return;
+    }
+
+    stateManager->ChangeResource(_state, _stateID);
 }

@@ -65,10 +65,23 @@ void HomeScreen::CheckButtons() {
     // PLAY_VS_AI clicked
     menuButtonManager->FetchResource(button, PLAY_VS_AI);
     if (button->IsClicked()) {
-        stateManager->ChangeResource(true, NO_INPUT);
+        printf("PLAY AI\n");
+        screenManager->FetchResource(currentScreen, GAMESCREEN);
+        currentScreen->CreateTextures();
     }
 
     //... Rest of events
+    menuButtonManager->FetchResource(button, PLAY_NETWORK);
+    if (button->IsClicked()) {
+        printf("PLAY NETWORK\n");
+
+    }
+
+    menuButtonManager->FetchResource(button, REVIEW_GAMES);
+    if (button->IsClicked()) {
+        printf("GAME REVIEW\n");
+
+    }
 }
 
 
