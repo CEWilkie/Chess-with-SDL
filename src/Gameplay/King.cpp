@@ -48,6 +48,8 @@ void King::FetchMoves(const std::vector<Piece *> &_teamPieces, const std::vector
         }
     }
 
+    EnforceBorderOnMoves();
+
     /*
      * Castling:
      * must be no obstructions between king and rook
@@ -137,4 +139,6 @@ void King::UpdateCheckerVars() {
         canCastleKingside = false;
         canCastleQueenside = false;
     }
+
+    lastMoveDisplayTimer--;
 }

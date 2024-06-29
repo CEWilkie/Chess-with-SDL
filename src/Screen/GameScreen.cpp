@@ -50,6 +50,8 @@ GameScreen::GameScreen(char _teamID) : AppScreen() {
     stateManager->NewResource(false, SHOW_PROMO_MENU);
     stateManager->NewResource(false, END_OF_TURN);
     stateManager->NewResource(true, ALL_TASKS_COMPLETE);
+    stateManager->NewResource(false, CHECKMATE);
+    stateManager->NewResource(false, STALEMATE);
 }
 
 GameScreen::~GameScreen() {
@@ -183,10 +185,12 @@ std::string GameScreen::FetchOpponentMoveEngine() {
     size_t pos = response.find(delim);
 
     while ((line = response.substr(0, pos+1)).find("bestmove") == std::string::npos) {
+        printf("Line %s\n", line.c_str());
         response.erase(0, pos+1);
         if (response.empty()) response = sfm->FetchResult();
         pos = response.find(delim);
     }
+    printf("Success Line %s\n", line.c_str());
 
     // convert response string into only movestring [targetpos][destpos][promoteTo]
     delim = ' ';
@@ -194,8 +198,9 @@ std::string GameScreen::FetchOpponentMoveEngine() {
     line.erase(0, pos+1);
     //printf("DEBUG REMOVE BESTMOVE [%s]\n", line.c_str());
 
-    pos = line.find(delim);
-    line.erase(pos, std::string::npos);
+    if ((pos = line.find(delim)) != std::string::npos) {
+        line.erase(pos, std::string::npos);
+    }
     //printf("DEBUG REMOVE BESTMOVE [%s]\n", line.c_str());
 
     return line;
@@ -284,13 +289,14 @@ void GameScreen::HandleEvents() {
         })) {
             // conditions met: checkmate
             printf("CHECKMATE! 1:0");
+            stateManager->ChangeResource(true, CHECKMATE);
         } else {
             // conditions met: stalemate
             printf("STALEMATE! 0.5:0.5");
+            stateManager->ChangeResource(true, STALEMATE);
         }
 
         // Show results, store final game results, wait for input to return to menu
-        // ...
         return;
     }
 
@@ -317,6 +323,8 @@ void GameScreen::HandleEvents() {
      */
 
     if (!usersTurn) {
+        SDL_Delay(100);
+
         // [position of piece][destination position][promotion] needs to be converted into an actual move
         std::string basicMoveStr = FetchOpponentMoveEngine();
         printf("movegiven : %s\n", basicMoveStr.c_str());
@@ -332,9 +340,44 @@ void GameScreen::HandleEvents() {
             for (auto move : *movPiece->GetAvailableMovesPtr()) {
                 if (target.x == move.GetPosition().x && target.y == move.GetPosition().y) {
                     selectedPiece->MakeMove(movPiece, &move, board);
+                    break;
+                }
+            }
+
+            // Promotion
+            if (basicMoveStr.length() > 4) {
+                Piece* promotedPiece = nullptr;
+                Piece_Info* pi = movPiece->GetPieceInfoPtr();
+                switch (basicMoveStr[5]) {
+                    case 'n':
+                        promotedPiece = new Knight("Knight", pi->colID, pi->gamepos);
+                        break;
+                    case 'b':
+                        promotedPiece = new Bishop("Bishop", pi->colID, pi->gamepos);
+                        break;
+                    case 'r':
+                        promotedPiece = new Rook("Rook", pi->colID, pi->gamepos);
+                        break;
+                    case 'q':
+                        promotedPiece = new Queen("Queen", pi->colID, pi->gamepos);
+                        break;
+                    default: break;
+                }
+
+                if (promotedPiece != nullptr) {
+                    // Piece has been made, mark pawn as captured and add new piece to teamptr
+                    movPiece->Captured(true);
+                    movPiece->UpdatePromoteInfo(promotedPiece);
+
+                    promotedPiece->CreateTextures();
+                    promotedPiece->SetRects(board);
+
+                    teamptr->push_back(promotedPiece);
+                    allPieces->push_back(promotedPiece);
                 }
             }
         }
+
 
         eot = true;
     }

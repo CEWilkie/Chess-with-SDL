@@ -72,4 +72,5 @@ void Rook::FetchMoves(const std::vector<Piece *> &_teamPieces, const std::vector
 
 void Rook::UpdateCheckerVars() {
     if (hasMoved) canCastle = true;
+    lastMoveDisplayTimer--;
 }

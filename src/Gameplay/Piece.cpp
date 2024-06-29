@@ -195,6 +195,8 @@ void Piece::EnforceBorderOnMoves() {
     int rows, cols;
     Board::GetRowsColumns(rows, cols);
 
+    if (validMoves.empty()) return;
+
     for (auto iter = validMoves.begin(); iter != validMoves.end();)  {
         Position<char, int> movPos {};
         iter->GetPosition(&movPos);

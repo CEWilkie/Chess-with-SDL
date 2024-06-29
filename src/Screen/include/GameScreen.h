@@ -12,10 +12,12 @@
 #include "../../StockfishUtil/StockfishManager.h"
 
 class GameScreen : public AppScreen {
-    private:
+    public:
         enum GameState : int {
-            SHOW_PROMO_MENU = LAST_SCREEN_STATE, END_OF_TURN, ALL_TASKS_COMPLETE,
+            SHOW_PROMO_MENU = LAST_SCREEN_STATE, END_OF_TURN, ALL_TASKS_COMPLETE, CHECKMATE, STALEMATE,
         };
+
+    private:
         enum MenuID : int {
 
         };

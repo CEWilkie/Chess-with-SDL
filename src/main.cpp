@@ -120,7 +120,6 @@ int main(int argc, char** argv) {
     HomeScreen ms;
     ms.CreateTextures();
 
-
     GameScreen gs('W');
     gs.CreateTextures();
     gs.SetupEngine(true, 1320, 10);
@@ -184,6 +183,9 @@ int main(int argc, char** argv) {
          */
 
         if (ms.FetchScreenState(AppScreen::ScreenState::SCREEN_CLOSED)) running = false;
+        if (gs.FetchScreenState(GameScreen::GameState::CHECKMATE) ||
+                gs.FetchScreenState(GameScreen::GameState::STALEMATE)) running = false;
+
     }
 
     SDL_Quit();
