@@ -4,7 +4,7 @@
 
 #include "include/King.h"
 
-King::King(const std::string &_name, char _colID, Position<char, int> _gamepos)
+King::King(const std::string &_name, char _colID, std::pair<char, int> _gamepos)
 : Piece(_name, _colID,_gamepos) {
     canCastleQueenside = true;
     canCastleKingside = true;
@@ -30,11 +30,11 @@ void King::FetchMoves(const std::vector<Piece *> &_teamPieces, const std::vector
 
     // fetch all moves assuming none result in king being checked
     AvailableMove move;
-    Position<char, int> movPos = {};
+    std::pair<char, int> movPos = {};
 
     for (int dc = -1; dc < 2; dc++) {
         for (int dr = -1; dr < 2; dr++) {
-            movPos = {char(info->gamepos.x+dc), info->gamepos.y+dr};
+            movPos = {char(info->gamepos.first + dc), info->gamepos.second + dr};
             move.SetPosition(movPos);
             move.SetTarget(nullptr);
             if (GetTeamPieceOnPosition(_teamPieces, movPos) != nullptr) continue;
@@ -48,7 +48,7 @@ void King::FetchMoves(const std::vector<Piece *> &_teamPieces, const std::vector
         }
     }
 
-    EnforceBorderOnMoves();
+    EnforceBorderOnMoves(_board);
 
     /*
      * Castling:
@@ -61,21 +61,21 @@ void King::FetchMoves(const std::vector<Piece *> &_teamPieces, const std::vector
 
     // construct castling move
     AvailableMove castleKS {}, castleQS;
-    castleKS.SetPosition({char(info->gamepos.x + 2), info->gamepos.y});
-    castleQS.SetPosition({char(info->gamepos.x - 2), info->gamepos.y});
+    castleKS.SetPosition({char(info->gamepos.first + 2), info->gamepos.second});
+    castleQS.SetPosition({char(info->gamepos.first - 2), info->gamepos.second});
     bool castleKingsideNow = true;
     bool castleQueensideNow = true;
 
     // checking that no space is checked or occupied
     for (int dx = -2; dx < 3; dx++){
         for (auto piece: _oppPieces) {
-            if (piece->IsTargetingPosition({char(info->gamepos.x + dx), info->gamepos.y})) {
+            if (piece->IsTargetingPosition({char(info->gamepos.first + dx), info->gamepos.second})) {
                 // piece is targeting one of the spaces, cannot currently castle
                 (dx < 0) ? castleQueensideNow = false : castleKingsideNow = false;
             }
         }
 
-        if (GetPieceOnPosition(_teamPieces, _oppPieces, {char(info->gamepos.x + dx), info->gamepos.y}) != nullptr) {
+        if (GetPieceOnPosition(_teamPieces, _oppPieces, {char(info->gamepos.first + dx), info->gamepos.second}) != nullptr) {
             // Piece is on the position, cannot castle
             (dx < 0) ? castleQueensideNow = false : castleKingsideNow = false;
         }
@@ -86,8 +86,8 @@ void King::FetchMoves(const std::vector<Piece *> &_teamPieces, const std::vector
 
     // test the closest first rook on the Kingside for captured / moved
     if (castleKingsideNow){
-        for (char dx = info->gamepos.x; dx < 'i'; dx++) {
-            auto piece = GetTeamPieceOnPosition(_teamPieces, {dx, info->gamepos.y});
+        for (char dx = info->gamepos.first; dx < 'i'; dx++) {
+            auto piece = GetTeamPieceOnPosition(_teamPieces, {dx, info->gamepos.second});
             if (piece == nullptr) continue;
 
             // test rook
@@ -109,8 +109,8 @@ void King::FetchMoves(const std::vector<Piece *> &_teamPieces, const std::vector
 
     // test the closest first rook on the Queenside for captured / moved
     if (castleQueensideNow) {
-        for (char dx = info->gamepos.x; dx >= 'a'; dx--) {
-            auto piece = GetTeamPieceOnPosition(_teamPieces, {dx, info->gamepos.y});
+        for (char dx = info->gamepos.first; dx >= 'a'; dx--) {
+            auto piece = GetTeamPieceOnPosition(_teamPieces, {dx, info->gamepos.second});
             if (piece == nullptr) continue;
 
             // test rook
@@ -130,7 +130,7 @@ void King::FetchMoves(const std::vector<Piece *> &_teamPieces, const std::vector
         }
     }
 
-    EnforceBorderOnMoves();
+    EnforceBorderOnMoves(_board);
     updatedMoves = true;
 }
 

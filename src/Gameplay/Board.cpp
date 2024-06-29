@@ -5,6 +5,7 @@
 #include "include/Board.h"
 
 Board::Board() {
+
     // Add rects for game board regions
     rm->NewResource({0, 0, minMenuWidth, minBoardWidth}, RectID::OPTIONS);
     rm->NewResource({minMenuWidth, 0, minBoardWidth, minBoardWidth}, RectID::BOARD);
@@ -339,12 +340,12 @@ void Board::GetMinDimensions(int& _w, int& _h) const {
     _h = minBoardWidth;
 }
 
-void Board::GetRowsColumns(int &_rows, int &_cols) {
+void Board::GetRowsColumns(int &_rows, int &_cols) const {
     _rows = rows;
     _cols = columns;
 }
 
-Pair<int> Board::GetRowsColumns() {
+std::pair<int, int> Board::GetRowsColumns() const {
     return {rows, columns};
 }
 
@@ -356,19 +357,19 @@ void Board::GetBoardBLPosition(int& _x, int& _y) const {
     _y = boardRect.y + topLeftTile.y + (topLeftTile.h*(rows-1));
 }
 
-void Board::GetTileRectFromPosition(SDL_Rect &rect, Position<char, int> position) const {
+void Board::GetTileRectFromPosition(SDL_Rect &rect, std::pair<char, int> position) const {
     // Get rect of a1
     GetTileDimensions(rect.w, rect.h);
     GetBoardBLPosition(rect.x, rect.y);
 
-    // now move x and y to position
+    // now move first and second to position
     SDL_Rect boardRect;
     rm->FetchResource(boardRect, RectID::BOARD);
-    rect.x += (rect.w * (std::tolower(position.x)-'a'));
-    rect.y -= (rect.h * (position.y - 1));
+    rect.x += (rect.w * (std::tolower(position.first) - 'a'));
+    rect.y -= (rect.h * (position.second - 1));
 }
 
-void Board::GetBorderedRectFromPosition(SDL_Rect &_rect, Position<char, int> _position) const {
+void Board::GetBorderedRectFromPosition(SDL_Rect &_rect, std::pair<char, int> _position) const {
     // Get rect of a tile on a position without border
     GetTileRectFromPosition(_rect, _position);
 
@@ -456,19 +457,19 @@ void Board::ClearExcessGameFiles() {
      * unreadable date names are destroyed first under assumption that they are of old unsupported format / processes.
      */
 
-    std::vector<AsymPair<std::string, time_t>> pathTimes;
+    std::vector<std::pair<std::string, time_t>> pathTimes;
 
     // Fetch all contents of GameData dir and convert paths to fileTimes in list
     for (const auto& gameData : std::filesystem::directory_iterator(gameDataDirPath)) {
-        AsymPair<std::string, time_t> pathTime;
+        std::pair<std::string, time_t> pathTime;
         std::string pathTimeString;
         struct tm structtm {};
 
-        pathTime.a = gameData.path().string();
+        pathTime.first = gameData.path().string();
 
         // now get timeString by removing the path to the folder + copy value
         //remove folder path string leaving just date + copy
-        pathTimeString = pathTime.a.substr(gameDataDirPath.length()+1, std::string::npos);
+        pathTimeString = pathTime.first.substr(gameDataDirPath.length()+1, std::string::npos);
 
         // ensure folder name is long enough to house the full time string
         if (pathTimeString.length() >= timeStringFormat.size() - 1) {
@@ -479,11 +480,11 @@ void Board::ClearExcessGameFiles() {
             ss >> std::get_time(&structtm, timeFormat.c_str());
 
             // currentTurn into time_t which can be stored then compared
-            pathTime.b = mktime(&structtm);
+            pathTime.second = mktime(&structtm);
 
         } else {
             // default to time 0
-            pathTime.b = 0;
+            pathTime.second = 0;
         }
 
         pathTimes.push_back(pathTime);
@@ -491,8 +492,8 @@ void Board::ClearExcessGameFiles() {
 
     // sort by time oldest -> newest
     std::sort(pathTimes.begin(), pathTimes.end(),
-              [&](const AsymPair<std::string, time_t>& pathTimeA,const AsymPair<std::string, time_t>& pathTimeB){
-        return (pathTimeA.b < pathTimeB.b);
+              [&](const std::pair<std::string, time_t>& pathTimeA,const std::pair<std::string, time_t>& pathTimeB){
+        return (pathTimeA.second < pathTimeB.second);
     });
 
     // remove folders
@@ -500,8 +501,8 @@ void Board::ClearExcessGameFiles() {
     std::vector<std::string> dirsRemoved {};
     for (auto pt = pathTimes.begin(); pt < pathTimes.end();) {
         if (pathTimes.size() > 10) {
-            nRemoved += std::filesystem::remove_all(pt->a);
-            dirsRemoved.push_back(pt->a);
+            nRemoved += std::filesystem::remove_all(pt->first);
+            dirsRemoved.push_back(pt->first);
 
             pt = pathTimes.erase(pt);
             continue;
@@ -580,7 +581,7 @@ bool Board::WriteStartPositionsToFile(const std::vector<Piece *> &_allPieces) {
     for (auto piece : _allPieces) {
         Piece_Info* pInfo = piece->GetPieceInfoPtr();
         std::string pInfoStr; pInfoStr.append(&pInfo->colID);
-        pInfoStr += "," + pInfo->name + "," + pInfo->gamepos.x + "," + std::to_string(pInfo->gamepos.y);
+        pInfoStr += "," + pInfo->name + "," + pInfo->gamepos.first + "," + std::to_string(pInfo->gamepos.second);
         spFile << pInfoStr << std::endl;
     }
 
@@ -604,13 +605,13 @@ bool Board::WriteMoveToFile(const std::string& _move) {
 
 std::string Board::CreateFEN(const std::vector<Piece *> &_whitePieces, const std::vector<Piece *> &_blackPieces) const {
     // Create FEN string for current position
-    Position<char, int> position {'a',8};
+    std::pair<char, int> position {'a',8};
     Piece* posPiece;
     std::string FENstr {};
     int nEmptyTiles = 0;
 
-    while (position.y > 0) {
-        while (position.x <= 'h') {
+    while (position.second > 0) {
+        while (position.first <= 'h') {
             posPiece = Piece::GetPieceOnPosition(_whitePieces, _blackPieces, position);
             if (posPiece != nullptr) {
                 // write in number of empty tiles since last posPiece on row
@@ -634,7 +635,7 @@ std::string Board::CreateFEN(const std::vector<Piece *> &_whitePieces, const std
             }
 
 
-            position.x = char(position.x + 1);
+            position.first = char(position.first + 1);
         }
 
         // write in number of empty tiles since last posPiece on row
@@ -644,8 +645,8 @@ std::string Board::CreateFEN(const std::vector<Piece *> &_whitePieces, const std
         // indicate next row
         FENstr += '/';
 
-        position.x = 'a';
-        position.y--;
+        position.first = 'a';
+        position.second--;
     }
 
     // remove last /
@@ -687,23 +688,23 @@ std::string Board::CreateFEN(const std::vector<Piece *> &_whitePieces, const std
 
     // now denote possible en passant targets
     for (auto piece : _whitePieces) {
-        Position<char, int> target {};
+        std::pair<char, int> target {};
         if (piece->CanPassant()) {
             target = piece->GetPassantTarget();
             FENstr += " ";
-            FENstr += target.x;
-            FENstr += std::to_string(target.y);
+            FENstr += target.first;
+            FENstr += std::to_string(target.second);
             break;
         }
     }
 
     for (auto piece : _blackPieces) {
-        Position<char, int> target {};
+        std::pair<char, int> target {};
         if (piece->CanPassant()) {
             target = piece->GetPassantTarget();
             FENstr += " ";
-            FENstr += target.x;
-            FENstr += std::to_string(target.y);
+            FENstr += target.first;
+            FENstr += std::to_string(target.second);
             break;
         }
     }

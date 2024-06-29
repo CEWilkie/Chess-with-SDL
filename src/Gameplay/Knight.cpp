@@ -4,7 +4,7 @@
 
 #include "include/Knight.h"
 
-Knight::Knight(const std::string& _name, char _colID, Position<char, int> _gamepos)
+Knight::Knight(const std::string& _name, char _colID, std::pair<char, int> _gamepos)
 : Piece(_name, _colID, _gamepos) {
 
 }
@@ -32,13 +32,13 @@ void Knight::FetchMoves(const std::vector<Piece *> &_teamPieces, const std::vect
         if (x==0) continue;
         int vDir = (abs(x) == 2) ? 1 : 2;
         validMoves.emplace_back();
-        validMoves.back().SetPosition({char(info->gamepos.x-x), info->gamepos.y+vDir});
+        validMoves.back().SetPosition({char(info->gamepos.first - x), info->gamepos.second + vDir});
         validMoves.emplace_back();
-        validMoves.back().SetPosition({char(info->gamepos.x-x), info->gamepos.y-vDir});
+        validMoves.back().SetPosition({char(info->gamepos.first - x), info->gamepos.second - vDir});
     }
 
     // ensure moves are within the A-H and 1-8 bounds
-    EnforceBorderOnMoves();
+    EnforceBorderOnMoves(_board);
 
     // check if move is team-occupied or a capture
     for (auto iter = validMoves.begin(); iter < validMoves.end();) {

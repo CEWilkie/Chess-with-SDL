@@ -11,7 +11,7 @@ class Bishop : public Piece{
     private:
 
     public:
-        Bishop(const std::string& _name, char _colID, Position<char, int> _gamepos);
+        Bishop(const std::string& _name, char _colID, std::pair<char, int> _gamepos);
         void FetchMoves(const std::vector<Piece*> &_teamPieces, const std::vector<Piece*> &_oppPieces, const Board& _board) override;
 };
 

@@ -133,8 +133,14 @@ int main(int argc, char** argv) {
      * GAMELOOP
      */
 
+    frameTick.currTick = SDL_GetTicks64();
     bool running = true;
     while (running) {
+        // Update ticks
+        frameTick.lastTick = frameTick.currTick;
+        frameTick.currTick = SDL_GetTicks64();
+        frameTick.tickChange = frameTick.currTick - frameTick.lastTick;
+
         // Clear screen
         SDL_RenderClear(window.renderer);
 
@@ -149,7 +155,7 @@ int main(int argc, char** argv) {
          *  USER INPUT AND HANDLE EVENTS
          */
 
-        ms.HandleEvents();
+        //ms.HandleEvents();
         ms.UpdateButtonStates();
         ms.CheckButtons();
 
@@ -183,9 +189,9 @@ int main(int argc, char** argv) {
          */
 
         if (ms.FetchScreenState(AppScreen::ScreenState::SCREEN_CLOSED)) running = false;
+        if (gs.FetchScreenState(AppScreen::ScreenState::SCREEN_CLOSED)) running = false;
         if (gs.FetchScreenState(GameScreen::GameState::CHECKMATE) ||
                 gs.FetchScreenState(GameScreen::GameState::STALEMATE)) running = false;
-
     }
 
     SDL_Quit();

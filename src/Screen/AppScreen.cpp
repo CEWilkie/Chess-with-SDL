@@ -86,17 +86,29 @@ void AppScreen::UpdateButtonStates() {
 
 void AppScreen::HandleEvents() {
     SDL_Event event;
+
     while (SDL_PollEvent(&event) != 0) {
+        // Check for window close
         if (event.type == SDL_QUIT) {
             stateManager->ChangeResource(true, SCREEN_CLOSED);
+            break;
         }
-        if (event.type == SDL_MOUSEBUTTONDOWN) {
-            mouse.MouseDown(true);
-        }
-        if (event.type == SDL_MOUSEBUTTONUP) {
-            mouse.MouseDown(false);
+
+        // Check other events
+        switch (event.type) {
+            case SDL_MOUSEBUTTONDOWN:
+                mouse.MouseDown(true);
+                break;
+            case SDL_MOUSEBUTTONUP:
+                mouse.MouseDown(false);
+                break;
+            default:
+                break;
         }
     }
+
+    mouse.Update();
+    //mouse.PrintStates();
 }
 
 

@@ -21,24 +21,6 @@ void LogError(const std::string& errorMsgDecorative = "", const T& errorMsg = ""
            errorMsgDecorative.c_str(), errorMsg, fatal);
 }
 
-template<class A>
-struct Pair{
-        A a;
-        A b;
-    };
-
-template<class A, class B>
-struct AsymPair{
-            A a;
-            B b;
-        };
-
-template<class A, class B>
-struct Position{
-        A x;
-        B y;
-    };
-
 struct Obj_Window {
     SDL_Window* window {};
     SDL_Renderer* renderer {};
@@ -48,37 +30,55 @@ struct Obj_Window {
 } ;
 inline Obj_Window window;
 
+struct FrameTick {
+    Uint64 currTick;
+    Uint64 lastTick;
+    Uint64 tickChange;
+};
+inline FrameTick frameTick;
 
 class Mouse {
     private:
+        bool nextActive = false;
         bool active = false;
         bool prevactive = false;
         bool heldactive = false;
-        Position<int, int> position {};
+        std::pair<int, int> position {};
 
     public:
         void MouseDown(bool _isDown) {
+            nextActive = _isDown;
+        }
+
+        void Update() {
             // Update click values
             prevactive = active;
-            active = _isDown;
+            active = nextActive;
             heldactive = (prevactive && active);
+
+            UpdatePosition();
+        }
+
+        void PrintStates() {
+            printf("_ACTIVE : %s\n_PREVACTIVE : %s\n_HELDACTIVE : %s\n",
+                   (active ? "y" : "n"), (prevactive ? "y" : "n"), (heldactive ? "y" : "n") );
         }
 
         void UpdatePosition() {
             // Update position
-            SDL_GetMouseState(&position.x, &position.y);
+            SDL_GetMouseState(&position.first, &position.second);
         }
 
-        Position<int, int> GetMousePosition() { return position; }
+        std::pair<int, int> GetMousePosition() { return position; }
 
-        bool InRadius(Position<int, int> pos, int radius) {
+        bool InRadius(std::pair<int, int> pos, int radius) {
             UpdatePosition();
-            return (std::pow(position.x - pos.x, 2) + std::pow(position.y - pos.y, 2) <= std::pow(radius, 2));
+            return (std::pow(position.first - pos.first, 2) + std::pow(position.second - pos.second, 2) <= std::pow(radius, 2));
         }
 
         bool InRect(SDL_Rect rect) {
             UpdatePosition();
-            return abs(position.x - (rect.x + rect.w/2)) <= rect.w/2 && abs(position.y - (rect.y + rect.h/2)) <= rect.h/2;
+            return abs(position.first - (rect.x + rect.w / 2)) <= rect.w / 2 && abs(position.second - (rect.y + rect.h / 2)) <= rect.h / 2;
         }
 
         bool UnheldClick(SDL_Rect rect) {
@@ -96,7 +96,7 @@ class Mouse {
         }
 
         bool IsUnheldActive() const {
-            return active && !heldactive;
+            return active && !prevactive;
         }
 };
 inline Mouse mouse;

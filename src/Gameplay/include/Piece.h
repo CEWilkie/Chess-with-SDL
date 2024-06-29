@@ -29,26 +29,26 @@ struct Piece_Info {
     std::string name = "Pawn";
     char pieceID = 'a';
     char colID = 'W';
-    Position<char, int> gamepos {'A', 7};
-    Position<char, int> lastpos {'A', 7};
+    std::pair<char, int> gamepos {'A', 7};
+    std::pair<char, int> lastpos {'A', 7};
     TextureID textureID = WHITE_PAWN;
 };
 
 class AvailableMove{
     private:
-        Position<char, int> position {};
+        std::pair<char, int> position {};
         Piece* target = nullptr;
 
     public:
-        void SetPosition(Position<char, int> _position) { position = _position; }
+        void SetPosition(std::pair<char, int> _position) { position = _position; }
         void SetTarget(Piece* _target) {
             target = _target;
         }
-        void GetPosition(Position<char, int> *_assignablePosition) const {
-            _assignablePosition->x = position.x;
-            _assignablePosition->y = position.y;
+        void GetPosition(std::pair<char, int> *_assignablePosition) const {
+            _assignablePosition->first = position.first;
+            _assignablePosition->second = position.second;
         }
-        Position<char, int> GetPosition() {
+        std::pair<char, int> GetPosition() {
             return position;
         }
         void GetTarget(Piece* _assignableTarget) const {
@@ -80,9 +80,12 @@ class Piece {
 
         // pawn movements
         bool hasMoved = false;
+        bool justMoved = false;
         int lastMoveDisplayTimer = 0;
         bool canPassant = false;
         int passantTimer = 0;
+        int animLenTicks = 200;
+        Uint64 animStartTick = 0;
         bool canPromote = false;
         bool promoted = false;
         Piece* promotedTo = nullptr;
@@ -94,11 +97,14 @@ class Piece {
 
         // user input detection
         bool selected = false;
+        bool heldClick = false;
+        bool clicked = false;
+        bool mouseDown = false;
         bool followMouse = false;
 
     public:
         // Constructor
-        Piece(const std::string& _name, char _colID, Position<char, int> _position);
+        Piece(const std::string& _name, char _colID, std::pair<char, int> _position);
 
         /*
          * DISPLAY
@@ -118,7 +124,7 @@ class Piece {
 
         // Fetching and testing Moves
         virtual void FetchMoves(const std::vector<Piece*> &_teamPieces, const std::vector<Piece*> &_oppPieces, const Board& _board);
-        void EnforceBorderOnMoves();
+        void EnforceBorderOnMoves(const Board& _board);
         static bool MoveLeadsToCheck(const std::vector<Piece *> &_teamPieces, const std::vector<Piece*> &_oppPieces, const Board& _board, AvailableMove* _move, Piece* _movingPiece);
         void PreventMoveIntoCheck(const std::vector<Piece *> &_teamPieces, const std::vector<Piece *> &_oppPieces, const Board &_board);
 
@@ -131,27 +137,27 @@ class Piece {
          */
 
         // Target / Targeting Status Fetching
-        bool IsTargetingPosition(Position<char, int> _targetPosition);
+        bool IsTargetingPosition(std::pair<char, int> _targetPosition);
         bool IsCheckingKing();
 
         // Fetching piece if on a particular position
-        static Piece* GetTeamPieceOnPosition(const std::vector<Piece*> &_teamPieces, Position<char, int> _targetPos);
-        static Piece* GetOppPieceOnPosition(const std::vector<Piece*> &_oppPieces, Position<char, int> _targetPos);
-        static Piece* GetPieceOnPosition(const std::vector<Piece*> &_teamPieces, const std::vector<Piece*> &_oppPieces, Position<char, int> _targetPos);
+        static Piece* GetTeamPieceOnPosition(const std::vector<Piece*> &_teamPieces, std::pair<char, int> _targetPos);
+        static Piece* GetOppPieceOnPosition(const std::vector<Piece*> &_oppPieces, std::pair<char, int> _targetPos);
+        static Piece* GetPieceOnPosition(const std::vector<Piece*> &_teamPieces, const std::vector<Piece*> &_oppPieces, std::pair<char, int> _targetPos);
 
         /*
          * MAKING A MOVE
          */
 
         // Making a move / Testing a move
-        void MoveTo(Position<char, int> _movepos, Board* _board);
+        void MoveTo(std::pair<char, int> _movepos, Board* _board);
         virtual void UpdateCheckerVars();
         void Captured(bool captured = true);
         void TempMoveTo(AvailableMove* _tempmove);
         void UnMove(AvailableMove* _tempmove);
 
         // Promotions
-        bool ReadyToPromote();
+        bool ReadyToPromote(const Board& _board);
         void UpdatePromoteInfo(Piece* _promotedTo);
         Piece* GetPromotedTo() const;
 
@@ -160,8 +166,8 @@ class Piece {
          */
 
         // Selecting Piece
-        bool CheckClicked();
-        bool UpdateSelected();
+        void UpdateClickedStatus(std::vector<Piece*>* _teamPieces);
+        void SetSelected(bool _selected);
         void UnselectPiece();
 
         /*
@@ -172,9 +178,10 @@ class Piece {
         std::vector<AvailableMove>* GetAvailableMovesPtr() { return &validMoves; };
         bool HasMoved() const { return hasMoved; };
         bool IsCaptured() const { return captured; };
+        bool IsClicked() const { return clicked; };
         bool CanPassant() const { return canPassant; };
-        Position<char, int> GetPassantTarget() const {
-            return {info->gamepos.x, info->gamepos.y - dir};
+        std::pair<char, int> GetPassantTarget() const {
+            return {info->gamepos.first, info->gamepos.second - dir};
         };
 
         // should be moved to child

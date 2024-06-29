@@ -127,23 +127,23 @@ bool ConfigExists() {
     std::error_code ec;
 
     // required files stored in pairs of {name, path}
-    Pair<std::string> reqFilesDir = {"RequiredFiles", "../RequiredFiles"};
-    Pair<std::string> configInfoFile = {"ConfigInfo", reqFilesDir.b + "/ConfigInfo"};
+    std::pair<std::string, std::string> reqFilesDir = {"RequiredFiles", "../RequiredFiles"};
+    std::pair<std::string, std::string> configInfoFile = {"ConfigInfo", reqFilesDir.second + "/ConfigInfo"};
 
     // ensure RequiredFiles directory exists
-    if (!std::filesystem::exists(reqFilesDir.b)) {
-        printf("%s folder not found. Creating.\n", reqFilesDir.a.c_str());
-        if (!std::filesystem::create_directory(reqFilesDir.b, ec)) {
+    if (!std::filesystem::exists(reqFilesDir.second)) {
+        printf("%s folder not found. Creating.\n", reqFilesDir.first.c_str());
+        if (!std::filesystem::create_directory(reqFilesDir.second, ec)) {
             LogError("Failed to create folder.", ec.message().c_str(), true);
             return false;
         }
     }
 
     // Ensure ConfigInfo file exists
-    if (!std::filesystem::exists(configInfoFile.b)) {
-        printf("%s file not found. Creating.\n", configInfoFile.a.c_str());
+    if (!std::filesystem::exists(configInfoFile.second)) {
+        printf("%s file not found. Creating.\n", configInfoFile.first.c_str());
 
-        std::ofstream configFile(configInfoFile.b);
+        std::ofstream configFile(configInfoFile.second);
         if (!configFile.good()) {
             configFile.close();
             LogError("Failed to create file.", "", true);

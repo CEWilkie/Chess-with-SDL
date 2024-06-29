@@ -13,7 +13,7 @@ class Knight : public Piece{
     private:
 
     public:
-        Knight(const std::string& _name, char _colID, Position<char, int> _gamepos);
+        Knight(const std::string& _name, char _colID, std::pair<char, int> _gamepos);
         void FetchMoves(const std::vector<Piece*> &_teamPieces, const std::vector<Piece*> &_oppPieces, const Board& _board) override;
 };
 

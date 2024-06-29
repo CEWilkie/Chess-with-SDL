@@ -7,12 +7,12 @@
 SelectedPiece::SelectedPiece() = default;
 
 void SelectedPiece::CheckForPieceClicked(std::vector<Piece*>* _teamptr) {
-    // Has the user clicked within the window boundaries
-    if (!mouse.UnheldClick(window.currentRect)) return;
+    // If not md and not a cor within the window, return early as no input to test for
+    if (!mouse.IsHeldActive() && !mouse.ClickOnRelease(window.currentRect)) return;
 
     if (!std::any_of(_teamptr->begin(), _teamptr->end(), [&](Piece* piece)
     {
-        if (piece->CheckClicked()) {
+        if (piece->IsClicked()) {
             // piece was clicked, so update the selected piece
             ChangeSelectedPiece(piece);
             return true;
@@ -27,14 +27,14 @@ void SelectedPiece::CheckForPieceClicked(std::vector<Piece*>* _teamptr) {
 void SelectedPiece::ChangeSelectedPiece(Piece *_newSelected) {
     // clear selectedPiece pointers
     if (selectedPiece != nullptr) {
-        selectedPiece->UpdateSelected();
+        selectedPiece->SetSelected(false);
         selectedPiece = nullptr;
         selectedPieceInfo = nullptr;
     }
 
     // set new selectedPiece
     if ((selectedPiece = _newSelected) != nullptr) {
-        selectedPiece->UpdateSelected();
+        selectedPiece->SetSelected(true);
         selectedPieceInfo = selectedPiece->GetPieceInfoPtr();
     }
 }
@@ -58,7 +58,7 @@ bool SelectedPiece::CheckForMoveClicked(const Board* _board) {
         _board->GetBorderedRectFromPosition(moveRect, move.GetPosition());
 
         // test if mouse click is inside the rect
-        if (mouse.UnheldClick(moveRect)) {
+        if (mouse.ClickOnRelease(moveRect) || mouse.UnheldClick(moveRect)) {
             selectedMove = &move;
             return true;
         }
@@ -94,14 +94,14 @@ void SelectedPiece::CreateACNstring(std::vector<Piece*>* _teamptr) {
         if (piece == lastMovedPiece) return false;
         if (piece->GetPieceInfoPtr()->pieceID != lastMovedInfo.pieceID) return false;
 
-        Position<char, int> movePos{}, testMovePos{};
+        std::pair<char, int> movePos{}, testMovePos{};
         lastMove.GetPosition(&movePos);
         for (auto move: *piece->GetAvailableMovesPtr()) {
             move.GetPosition(&testMovePos);
 
             // if both pieces can do the same move, ensure they are on different columns
-            if (testMovePos.x == movePos.x && testMovePos.y == movePos.y) {
-                if (piece->GetPieceInfoPtr()->gamepos.x != lastMovedInfo.gamepos.x) {
+            if (testMovePos.first == movePos.first && testMovePos.second == movePos.second) {
+                if (piece->GetPieceInfoPtr()->gamepos.first != lastMovedInfo.gamepos.first) {
                     return true;
                 }
             }
@@ -110,7 +110,7 @@ void SelectedPiece::CreateACNstring(std::vector<Piece*>* _teamptr) {
         return false;
     })) {
         // requires a column indicator
-        lastMoveACN += lastMovedInfo.gamepos.x;
+        lastMoveACN += lastMovedInfo.gamepos.first;
     }
 
     // Now check by rank
@@ -119,15 +119,15 @@ void SelectedPiece::CreateACNstring(std::vector<Piece*>* _teamptr) {
         if (piece == lastMovedPiece) return false;
         if (piece->GetPieceInfoPtr()->pieceID != lastMovedInfo.pieceID) return false;
 
-        Position<char, int> movePos{}, testMovePos{};
+        std::pair<char, int> movePos{}, testMovePos{};
         lastMove.GetPosition(&movePos);
         for (auto move: *piece->GetAvailableMovesPtr()) {
             move.GetPosition(&testMovePos);
 
             // if both pieces can do the same move, ensure they are on different rows and column is same
-            if (testMovePos.x == movePos.x && testMovePos.y == movePos.y) {
-                if (piece->GetPieceInfoPtr()->gamepos.y != lastMovedInfo.gamepos.y &&
-                piece->GetPieceInfoPtr()->gamepos.x == lastMovedInfo.gamepos.x) {
+            if (testMovePos.first == movePos.first && testMovePos.second == movePos.second) {
+                if (piece->GetPieceInfoPtr()->gamepos.second != lastMovedInfo.gamepos.second &&
+                    piece->GetPieceInfoPtr()->gamepos.first == lastMovedInfo.gamepos.first) {
                     return true;
                 }
             }
@@ -136,17 +136,17 @@ void SelectedPiece::CreateACNstring(std::vector<Piece*>* _teamptr) {
         return false;
     })) {
         // requires a row indicator
-        lastMoveACN += std::to_string(lastMovedInfo.gamepos.y);
+        lastMoveACN += std::to_string(lastMovedInfo.gamepos.second);
     }
 
     // Is it a capture?
     Piece* target = lastMove.GetTarget();
     if (target != nullptr) {
-        if (target->GetPieceInfoPtr()->colID != lastMovedInfo.colID) lastMoveACN += "x";
+        if (target->GetPieceInfoPtr()->colID != lastMovedInfo.colID) lastMoveACN += "first";
     }
 
     // Now add destination
-    lastMoveACN += lastMove.GetPosition().x + std::to_string(lastMove.GetPosition().y);
+    lastMoveACN += lastMove.GetPosition().first + std::to_string(lastMove.GetPosition().second);
 
     /*
      * SPECIAL MOVES
@@ -158,7 +158,7 @@ void SelectedPiece::CreateACNstring(std::vector<Piece*>* _teamptr) {
         if (target->GetPieceInfoPtr()->colID == lastMovedInfo.colID) {
             lastMoveACN = "O-O";
             // if Rook is to the left of King, then it is Queen-Side castle
-            if (target->GetPieceInfoPtr()->gamepos.x < lastMovedInfo.gamepos.x) lastMoveACN += "-O";
+            if (target->GetPieceInfoPtr()->gamepos.first < lastMovedInfo.gamepos.first) lastMoveACN += "-O";
         }
 
     }
@@ -199,7 +199,7 @@ void SelectedPiece::MakeMove(Board* _board) {
 
     // if pawn, update id to match current file
     if (selectedPiece->GetPieceInfoPtr()->name == "Pawn") {
-        selectedPiece->GetPieceInfoPtr()->pieceID = selectedPiece->GetPieceInfoPtr()->gamepos.x;
+        selectedPiece->GetPieceInfoPtr()->pieceID = selectedPiece->GetPieceInfoPtr()->gamepos.first;
     }
 
     // move selected piece
@@ -214,8 +214,8 @@ void SelectedPiece::MakeMove(Board* _board) {
             auto pi = selectedPiece->GetPieceInfoPtr();
 
             // rook must now swap to the opposite side of the king
-            int dx = (target->GetPieceInfoPtr()->gamepos.x < pi->gamepos.x) ? 1 : -1;
-            target->MoveTo({char(pi->gamepos.x + dx), pi->gamepos.y}, _board);
+            int dx = (target->GetPieceInfoPtr()->gamepos.first < pi->gamepos.first) ? 1 : -1;
+            target->MoveTo({char(pi->gamepos.first + dx), pi->gamepos.second}, _board);
         } else {
             //move is to capture a target, mark target as captured
             selectedMove->GetTarget()->Captured(true);

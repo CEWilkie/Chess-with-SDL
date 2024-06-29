@@ -33,8 +33,8 @@ class Board{
     private:
         // Game Board Dimensions / info
         SDL_Rect topLeftTile {};
-        static const int rows = 8;
-        static const int columns = 8;
+        const int rows = 8;
+        const int columns = 8;
 
         // Tile inside border size vars
         float tile_borderWidth = 0.1;
@@ -72,11 +72,11 @@ class Board{
         // Getters
         void GetTileDimensions(int& _w, int& _h) const;
         void GetMinDimensions(int& _w, int& _h) const;
-        static void GetRowsColumns(int& _rows, int& _cols);
-        static Pair<int> GetRowsColumns() ;
+        void GetRowsColumns(int& _rows, int& _cols) const;
+        std::pair<int, int> GetRowsColumns() const;
         void GetBoardBLPosition(int& _x, int& _y) const;
-        void GetTileRectFromPosition(SDL_Rect& rect, Position<char, int> position) const;
-        void GetBorderedRectFromPosition(SDL_Rect &_rect, Position<char, int> _position) const;
+        void GetTileRectFromPosition(SDL_Rect& rect, std::pair<char, int> position) const;
+        void GetBorderedRectFromPosition(SDL_Rect &_rect, std::pair<char, int> _position) const;
 
         // Setters
         void FillToBounds(int _w, int _h);

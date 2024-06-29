@@ -12,7 +12,7 @@ class Rook : public Piece{
         bool canCastle = true;
 
     public:
-        Rook(const std::string& _name, char _colID, Position<char, int> _gamepos);
+        Rook(const std::string& _name, char _colID, std::pair<char, int> _gamepos);
         void FetchMoves(const std::vector<Piece*> &_teamPieces, const std::vector<Piece*> &_oppPieces, const Board& _board) override;
         void UpdateCheckerVars() override;
 };

@@ -185,12 +185,12 @@ std::string GameScreen::FetchOpponentMoveEngine() {
     size_t pos = response.find(delim);
 
     while ((line = response.substr(0, pos+1)).find("bestmove") == std::string::npos) {
-        printf("Line %s\n", line.c_str());
+        //printf("Line %s\n", line.c_str());
         response.erase(0, pos+1);
         if (response.empty()) response = sfm->FetchResult();
         pos = response.find(delim);
     }
-    printf("Success Line %s\n", line.c_str());
+    //printf("Success Line %s\n", line.c_str());
 
     // convert response string into only movestring [targetpos][destpos][promoteTo]
     delim = ' ';
@@ -267,7 +267,7 @@ void GameScreen::HandleEvents() {
      * FETCH PIECE MOVES
      */
 
-    for (auto& piece : *teamptr) {
+    for (Piece* piece : *teamptr) {
         piece->ClearMoves();
         piece->ClearNextMoves();
         piece->FetchMoves(*teamptr, *oppptr, *board);
@@ -305,6 +305,10 @@ void GameScreen::HandleEvents() {
      */
 
     if (usersTurn) {
+        for (Piece* piece : *userTeamPtr) {
+            piece->UpdateClickedStatus(userTeamPtr);
+        }
+
         // check if user has clicked on a move
         if (selectedPiece->CheckForMoveClicked(board)) {
             // make move
@@ -323,22 +327,22 @@ void GameScreen::HandleEvents() {
      */
 
     if (!usersTurn) {
-        SDL_Delay(100);
+        SDL_Delay(50);
 
         // [position of piece][destination position][promotion] needs to be converted into an actual move
         std::string basicMoveStr = FetchOpponentMoveEngine();
         printf("movegiven : %s\n", basicMoveStr.c_str());
 
-        Position<char, int> pos = {basicMoveStr[0], basicMoveStr[1] - '0'};
-        Position<char, int> target = {basicMoveStr[2], basicMoveStr[3] - '0'};
+        std::pair<char, int> pos = {basicMoveStr[0], basicMoveStr[1] - '0'};
+        std::pair<char, int> target = {basicMoveStr[2], basicMoveStr[3] - '0'};
         Piece* movPiece = Piece::GetTeamPieceOnPosition(*teamptr, pos);
         if (movPiece == nullptr) {
             // Big issue!!!!
-            printf("failed to find moving piece at %c%d. CHECK FEN STRING\n", pos.x, pos.y);
+            printf("failed to find moving piece at %c%d. CHECK FEN STRING\n", pos.first, pos.second);
         }
         else {
             for (auto move : *movPiece->GetAvailableMovesPtr()) {
-                if (target.x == move.GetPosition().x && target.y == move.GetPosition().y) {
+                if (target.first == move.GetPosition().first && target.second == move.GetPosition().second) {
                     selectedPiece->MakeMove(movPiece, &move, board);
                     break;
                 }
@@ -389,7 +393,7 @@ void GameScreen::HandleEvents() {
 
     if (eot && usersTurn) {
         for (auto piece : *userTeamPtr) {
-            if (piece->ReadyToPromote()) {
+            if (piece->ReadyToPromote(*board)) {
                 allTasksComplete = false;
 
                 // show promo menu

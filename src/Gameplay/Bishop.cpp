@@ -4,7 +4,7 @@
 
 #include "include/Bishop.h"
 
-Bishop::Bishop(const std::string &_name, char _colID, Position<char, int> _gamepos)
+Bishop::Bishop(const std::string &_name, char _colID, std::pair<char, int> _gamepos)
 : Piece(_name, _colID,_gamepos) {
 
 }
@@ -25,7 +25,7 @@ void Bishop::FetchMoves(const std::vector<Piece *> &_teamPieces, const std::vect
 
     // delta rows or change in rows. increments by +-1 to move in diagonals
     int maxRows, maxCols, dr = 0, dc = 0;
-    Board::GetRowsColumns(maxRows, maxCols);
+    _board.GetRowsColumns(maxRows, maxCols);
 
     // repeat 4 times for each of the diagonal directions (order RT -> RB -> LB -> LT)
     for (int direction = 0; direction < 4; direction++) {
@@ -35,10 +35,10 @@ void Bishop::FetchMoves(const std::vector<Piece *> &_teamPieces, const std::vect
 
         // set move to next tile in direction
         AvailableMove move;
-        Position<char, int> movPos = {char(info->gamepos.x + dc), info->gamepos.y + dr};
+        std::pair<char, int> movPos = {char(info->gamepos.first + dc), info->gamepos.second + dr};
         move.SetPosition(movPos);
 
-        while ((0 < movPos.y && movPos.y <= maxRows) && ('a' <= movPos.x && movPos.x <= char('a' + maxCols - 1))) {
+        while ((0 < movPos.second && movPos.second <= maxRows) && ('a' <= movPos.first && movPos.first <= char('a' + maxCols - 1))) {
             // if the position is occupied by a teammember, do not add move, and change direction
             if (GetTeamPieceOnPosition(_teamPieces, movPos) != nullptr) {
                 break;
@@ -56,11 +56,11 @@ void Bishop::FetchMoves(const std::vector<Piece *> &_teamPieces, const std::vect
             validMoves.push_back(move);
 
             // next tile in direction
-            movPos = {char(movPos.x+dc), movPos.y+dr};
+            movPos = {char(movPos.first + dc), movPos.second + dr};
             move.SetPosition(movPos);
         }
     }
 
-    EnforceBorderOnMoves();
+    EnforceBorderOnMoves(_board);
     updatedMoves = true;
 }
