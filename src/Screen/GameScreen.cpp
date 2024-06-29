@@ -10,26 +10,9 @@ GameScreen::GameScreen(char _teamID) : AppScreen() {
     Button* button;
     GenericManager<Button*>* menuButtonManager;
 
-    // Construct board
-    board = new Board();
-
-    // Ensure GameData directory exists else end program
-    if (!board->GameDataDirectoryExists()) {
-        printf("Failed to ensure game directory exists");
-        return;
-    }
-    board->ClearExcessGameFiles();
-    // Create game data files in dir
-    if (!board->CreateGameFiles()) {
-        printf("Error creating game files.\n");
-        return;
-    }
-
-    // Construct pieces
+    // Setup for pieces and board
+    SetUpBoard();
     SetUpPieces();
-    for (auto& piece : *allPieces) {
-        piece->SetRects(board);
-    }
 
     board->WriteStartPositionsToFile(*allPieces);
 
@@ -60,6 +43,25 @@ GameScreen::~GameScreen() {
         delete sfm;
         sfm = nullptr;
     }
+
+}
+
+void GameScreen::SetUpBoard() {
+    // Construct board
+    board = new Board();
+
+    // Ensure GameData directory exists else end program
+    if (!board->GameDataDirectoryExists()) {
+        printf("Failed to ensure game directory exists");
+        return;
+    }
+    board->ClearExcessGameFiles();
+    // Create game data files in dir
+    if (!board->CreateGameFiles()) {
+        printf("Error creating game files.\n");
+        return;
+    }
+
 
 }
 
@@ -111,6 +113,10 @@ void GameScreen::SetUpPieces() {
         }
     }
     boardStandardFile.close();
+
+    for (auto& piece : *allPieces) {
+        piece->SetRects(board);
+    }
 
     printf("CONSTRUCTED %zu WHITE PIECES, %zu BLACK PIECES, %zu TOTAL PIECES\n",
            whitePieces->size(), blackPieces->size(), allPieces->size());
@@ -165,7 +171,7 @@ std::string GameScreen::FetchOpponentMove() {
 std::string GameScreen::FetchOpponentMoveEngine() {
     // Get FEN of current position
     std::string FENstr = board->CreateFEN(*whitePieces, *blackPieces);
-    //printf("GET MOVE FROM FEN %s\n", FENstr.c_str());
+    printf("GET MOVE FROM FEN %s\n", FENstr.c_str());
 
     if (sfm == nullptr) {
         SetupEngine(true, 1500, 10);
@@ -327,8 +333,6 @@ void GameScreen::HandleEvents() {
      */
 
     if (!usersTurn) {
-        SDL_Delay(50);
-
         // [position of piece][destination position][promotion] needs to be converted into an actual move
         std::string basicMoveStr = FetchOpponentMoveEngine();
         printf("movegiven : %s\n", basicMoveStr.c_str());

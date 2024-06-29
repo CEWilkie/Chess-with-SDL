@@ -67,6 +67,7 @@ void HomeScreen::CheckButtons() {
     if (button->IsClicked()) {
         printf("PLAY AI\n");
         screenManager->FetchResource(currentScreen, GAMESCREEN);
+        currentScreen->ResizeScreen();
         currentScreen->CreateTextures();
     }
 

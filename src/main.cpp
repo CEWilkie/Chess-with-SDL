@@ -120,7 +120,7 @@ int main(int argc, char** argv) {
     screenManager->NewResource(&hs, HOMESCREEN);
 
     // Provides view of the gameboard during gameplay vs ai / network / game review
-    GameScreen gs('W');
+    GameScreen gs('B');
     gs.CreateTextures();
 
     // Later should move this

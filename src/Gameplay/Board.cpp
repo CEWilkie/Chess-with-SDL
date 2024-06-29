@@ -653,7 +653,7 @@ std::string Board::CreateFEN(const std::vector<Piece *> &_whitePieces, const std
     FENstr.pop_back();
 
     // Check whos currentTurn
-    FENstr += ((halfturns == 0) ? " w " : " b ");
+    FENstr += ((halfturns%2 == 0) ? " w " : " b ");
 
     // White castling status
     bool castlePossible = false;

@@ -19,7 +19,7 @@ class GameScreen : public AppScreen {
 
     private:
         enum MenuID : int {
-
+            GAME_OVER,
         };
         enum buttonID : int {
 
@@ -46,6 +46,7 @@ class GameScreen : public AppScreen {
         ~GameScreen();
 
         // Game setup
+        void SetUpBoard();
         void SetUpPieces();
         void SetupEngine(bool _limitStrength, int _elo, int _level);
 
