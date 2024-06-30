@@ -284,6 +284,7 @@ void GameScreen::HandleEvents() {
 
     /*
      * CHECK FOR STALEMATE / CHECKMATE
+     *
      * TODO : 3 move repetition
      * TODO : 50 moves rule
      * TODO : insufficient material
