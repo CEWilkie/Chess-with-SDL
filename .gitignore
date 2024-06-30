@@ -1,6 +1,4 @@
 cmake-build-debug/
 CMakeLists.txt
 
-Temp/
-stockfish/
 GameData/
