@@ -239,13 +239,15 @@ bool GameScreen::Display() {
     // Display board
     board->DisplayGameBoard();
     stateManager->FetchResource(state, SHOW_PROMO_MENU);
-    if (state) board->DisplayPromoMenu(teamptr->back());
 
     // Display Pieces
     for (Piece* piece : *allPieces) {
         piece->DisplayPiece(board);
         piece->DisplayMoves(board);
     }
+
+    // Display the promotion menu if required
+    if (state) board->DisplayPromoMenu(teamptr->back());
 
     return true;
 }
@@ -282,6 +284,9 @@ void GameScreen::HandleEvents() {
 
     /*
      * CHECK FOR STALEMATE / CHECKMATE
+     * TODO : 3 move repetition
+     * TODO : 50 moves rule
+     * TODO : insufficient material
      */
 
     bool canMove = std::any_of(teamptr->begin(), teamptr->end(), [](Piece *piece) {

@@ -66,6 +66,14 @@ void King::FetchMoves(const std::vector<Piece *> &_teamPieces, const std::vector
     bool castleKingsideNow = true;
     bool castleQueensideNow = true;
 
+    // if king is in check, cannot castle
+    if (std::any_of(_oppPieces.begin(), _oppPieces.end(), [](Piece* piece){
+        return piece->IsCheckingKing();
+    })) {
+        castleKingsideNow = false;
+        castleQueensideNow = false;
+    }
+
     // checking that no space is checked or occupied
     for (int dx = -2; dx < 3; dx++){
         for (auto piece: _oppPieces) {

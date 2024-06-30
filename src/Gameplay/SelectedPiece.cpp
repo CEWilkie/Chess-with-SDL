@@ -142,7 +142,7 @@ void SelectedPiece::CreateACNstring(std::vector<Piece*>* _teamptr) {
     // Is it a capture?
     Piece* target = lastMove.GetTarget();
     if (target != nullptr) {
-        if (target->GetPieceInfoPtr()->colID != lastMovedInfo.colID) lastMoveACN += "first";
+        if (target->GetPieceInfoPtr()->colID != lastMovedInfo.colID) lastMoveACN += "x";
     }
 
     // Now add destination

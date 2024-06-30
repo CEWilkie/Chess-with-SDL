@@ -86,13 +86,13 @@ void Piece::DisplayPiece(Board* _board) {
     if (lastMoveDisplayTimer > 0) {
         // last position
         _board->GetTileRectFromPosition(rect, info->lastpos);
-        SDL_SetRenderDrawColor(window.renderer, 0, 0, 150, 30);
+        SDL_SetRenderDrawColor(window.renderer, 0, 0, 0, 25);
         SDL_RenderFillRect(window.renderer, &rect);
         SDL_SetRenderDrawColor(window.renderer, 0, 0, 0, 0);
 
         // new position
-        rm->FetchResource(rect, RectID::BOARDPOS_RECT);
-        SDL_SetRenderDrawColor(window.renderer, 0, 0, 150, 75);
+        _board->GetTileRectFromPosition(rect, info->gamepos);
+        SDL_SetRenderDrawColor(window.renderer, 0, 0, 0, 50);
         SDL_RenderFillRect(window.renderer, &rect);
         SDL_SetRenderDrawColor(window.renderer, 0, 0, 0, 0);
     }
@@ -119,7 +119,11 @@ void Piece::DisplayPiece(Board* _board) {
 
     // Check if mouse dragging piece
     if (heldClick) {
+        SDL_Rect boardRect;
+        rm->FetchResource(boardRect, RectID::BOARDPOS_RECT);
         rm->FetchResource(rect, RectID::PIECE_RECT);
+        rect.w = boardRect.w * 4/3;
+        rect.h = boardRect.h * 4/3;
         rect.x = mouse.GetMousePosition().first - rect.w/2;
         rect.y = mouse.GetMousePosition().second - rect.h/2;
         rm->ChangeResource(rect, RectID::PIECE_RECT);
