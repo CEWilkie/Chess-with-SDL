@@ -70,9 +70,18 @@ bool AppScreen::Display() {
 
 
 void AppScreen::ResizeScreen() {
+    // Get sf
+    std::pair<double, double> sf = {(double)window.currentRect.w / screenRect.w,
+                                    (double)window.currentRect.h / screenRect.h};
+
+    // Update screenrect
+    screenRect.w = window.currentRect.w;
+    screenRect.h = window.currentRect.h;
+
     // resize menus
     for (auto& menu : *menuManager->AccessMap()) {
-        menu.second->UpdateSize({window.currentRect.w, window.currentRect.h});
+        SDL_Rect menuRect = menu.second->FetchMenuRect();
+        menu.second->UpdateSize({menuRect.w * sf.first, menuRect.h * sf.second});
     }
 
     // resize buttons

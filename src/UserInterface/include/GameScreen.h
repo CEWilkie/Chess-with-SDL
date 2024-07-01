@@ -15,6 +15,7 @@ class GameScreen : public AppScreen {
     public:
         enum GameState : int {
             SHOW_PROMO_MENU = LAST_SCREEN_STATE, END_OF_TURN, ALL_TASKS_COMPLETE, CHECKMATE, STALEMATE,
+            DRAW_OFFER, RESIGN, BOARD_FLIPPED,
         };
 
     private:
@@ -22,7 +23,7 @@ class GameScreen : public AppScreen {
             OPTIONS_MENU, GAME_OVER,
         };
         enum buttonID : int {
-            SHOW_OPTIONS_MENU
+            OM_HOME_SCREEN, OM_RESIGN, OM_OFFER_DRAW, OM_NEWGAME, OM_FLIP_BOARD,
         };
 
         // Pointers to board and pieces

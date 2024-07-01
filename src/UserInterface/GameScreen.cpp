@@ -33,12 +33,29 @@ GameScreen::GameScreen(char _teamID) : AppScreen() {
      * Construct OPTIONS menu (back to menu, resign, offer draw)
      */
 
-    // button to show menu
-//    button = new Button({0, 0}, {30, 30}, "HI");
-//    buttonManager->NewResource(button, SHOW_OPTIONS_MENU);
-
     menu = new Menu({0, 0}, {100, 500}, "");
     menu->CanClose(false);
+
+    // Back to home screen
+    button = new Button({10, 10}, {80, 30}, "Home");
+    menu->AccessButtonManager()->NewResource(button, OM_HOME_SCREEN);
+
+    // Resign game
+    button = new Button({10, 110}, {80, 30}, ICON_RESIGN);
+    menu->AccessButtonManager()->NewResource(button, OM_RESIGN);
+
+    // Offer Draw
+    button = new Button({10, 210}, {80, 30}, ICON_OFFERDRAW);
+    menu->AccessButtonManager()->NewResource(button, OM_OFFER_DRAW);
+
+    // New Game
+    button = new Button({10, 310}, {80, 30}, "New Game");
+    menu->AccessButtonManager()->NewResource(button, OM_NEWGAME);
+
+    // Flip Board
+    button = new Button({10, 410}, {80, 30}, "Flip Board");
+    menu->AccessButtonManager()->NewResource(button, OM_FLIP_BOARD);
+
     menuManager->NewResource(menu, OPTIONS_MENU);
 
     // Set states
@@ -80,6 +97,19 @@ void GameScreen::SetUpBoard() {
 }
 
 void GameScreen::SetUpPieces() {
+    // Check for old pieces after game
+    if (!allPieces->empty()) {
+        for (auto& piece : *allPieces) {
+            ;
+        }
+
+        allPieces->clear();
+
+
+    }
+
+
+
     // Read standard board from file
     std::fstream boardStandardFile("../RequiredFiles/BasicSetup.csv");
     std::string pieceString;
@@ -248,7 +278,7 @@ bool GameScreen::Display() {
     Button* button;
 
     // Display screen background
-    SDL_SetRenderDrawColor(window.renderer, 0, 150, 150, 255);
+    SDL_SetRenderDrawColor(window.renderer, 102, 57, 49, 255);
     SDL_RenderFillRect(window.renderer, &window.currentRect);
     SDL_SetRenderDrawColor(window.renderer, 0, 0, 0, 0);
 
@@ -289,19 +319,23 @@ void GameScreen::ResizeScreen() {
     AppScreen::ResizeScreen();
 
     // Temp vars
+    SDL_Rect objRect;
     Menu* menu;
     Button* button;
 
+    // Resize options menu to fit max dimensions
+    menuManager->FetchResource(menu, OPTIONS_MENU);
+    if (menu->FetchMenuRect().w > 100) menu->UpdateSize({150, menu->FetchMenuRect().h});
+    menuManager->ChangeResource(menu, OPTIONS_MENU);
+
     // Resize board
     board->FillToBounds(window.currentRect.w, window.currentRect.h);
+    menuManager->FetchResource(menu, OPTIONS_MENU);
+    objRect = menu->FetchMenuRect();
+    board->SetBoardPos(objRect.w, 0);
 
     // Resize pieces
     // ...
-
-    // Resize options menu
-    menuManager->FetchResource(menu, OPTIONS_MENU);
-    menu->UpdateSize({100, window.currentRect.h});
-    menuManager->ChangeResource(menu, OPTIONS_MENU);
 }
 
 void GameScreen::HandleEvents() {
@@ -518,4 +552,59 @@ void GameScreen::HandleEvents() {
 
 void GameScreen::CheckButtons() {
     AppScreen::CheckButtons();
+
+    // temp vars
+    Menu* menu;
+    Button* button;
+    GenericManager<Button*>* buttonManager;
+
+    /*
+     * OPTIONSMENU
+     */
+
+    menuManager->FetchResource(menu, OPTIONS_MENU);
+    buttonManager = menu->AccessButtonManager();
+
+    // Return to homescreen
+    buttonManager->FetchResource(button, OM_HOME_SCREEN);
+    if (button->IsClicked()) {
+        screenManager->FetchResource(currentScreen, HOMESCREEN);
+        currentScreen->ResizeScreen();
+        currentScreen->CreateTextures();
+    }
+
+    // Resign current game
+    buttonManager->FetchResource(button, OM_RESIGN);
+    if (button->IsClicked()) {
+        stateManager->ChangeResource(true, RESIGN);
+    }
+
+
+    // Offer draw
+    buttonManager->FetchResource(button, OM_OFFER_DRAW);
+    if (button->IsClicked()) {
+        stateManager->ChangeResource(true, DRAW_OFFER);
+    }
+
+
+    // New Game
+    buttonManager->FetchResource(button, OM_NEWGAME);
+    if (button->IsClicked()) {
+        bool cm = false, sm = false;
+        stateManager->FetchResource(cm, CHECKMATE);
+        stateManager->FetchResource(sm, STALEMATE);
+
+        // If stalemate or checkmate
+        if (cm || sm) {
+
+        }
+    }
+
+
+    // Flip board
+    buttonManager->FetchResource(button, OM_FLIP_BOARD);
+    if (button->IsClicked()) {
+        stateManager->ChangeResource(true, BOARD_FLIPPED);
+    }
+
 }

@@ -21,7 +21,7 @@ int EnsureWindowSize() {
     //SDL_GetWindowPosition(Window.window, &rect_current.a, &rect_current.b);
 
     // fetch min size boundaries
-    int minW = 1020, minH = 540;
+    int minW = 900, minH = 540;
 
     // detect if window has changed size
     int changed = 0;

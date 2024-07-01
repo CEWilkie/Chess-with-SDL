@@ -192,8 +192,6 @@ void Menu::UpdateSize(std::pair<int, int> _size) {
     menuRect.w = int((double)menuRect.w * sf.first);
     menuRect.h = int((double)menuRect.h * sf.second);
 
-    printf("RATIO %f %f\n", sf.first, sf.second);
-
     // Update buttons
     for (auto& button : *buttonManager->AccessMap()) {
         SDL_Rect buttonRect = button.second->FetchButtonRect();
