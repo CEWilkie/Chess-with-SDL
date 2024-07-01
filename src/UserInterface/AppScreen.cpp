@@ -21,16 +21,19 @@ AppScreen::AppScreen() {
 }
 
 bool AppScreen::CreateTextures() {
-    // Create Screen background texture
+    // Create UserInterface background texture
     // ...
 
     for (auto &menu : *menuManager->AccessMap()) {
-        menu.second->CreateTextures();
+        if (!menu.second->CreateTextures()) {
+            return false;
+        }
     }
 
-    // Display buttons
     for (auto &button : *buttonManager->AccessMap()) {
-        if (!button.second->Display()) return false;
+       if (!button.second->CreateTextures()) {
+           return false;
+       }
     }
 
     return true;

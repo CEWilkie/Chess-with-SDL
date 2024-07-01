@@ -19,14 +19,14 @@ class GameScreen : public AppScreen {
 
     private:
         enum MenuID : int {
-            GAME_OVER,
+            OPTIONS_MENU, GAME_OVER,
         };
         enum buttonID : int {
-
+            SHOW_OPTIONS_MENU
         };
 
         // Pointers to board and pieces
-        Board* board;
+        Board* board = nullptr;
         SelectedPiece* selectedPiece = new SelectedPiece();
         std::vector<Piece*>* allPieces = new std::vector<Piece*>;
         std::vector<Piece*>* whitePieces = new std::vector<Piece*>;

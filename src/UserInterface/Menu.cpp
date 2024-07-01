@@ -10,7 +10,7 @@ Menu::Menu(std::pair<int, int> _position, std::pair<int, int> _size, const std::
 
     // Add in close closeButton (this is external to buttonManager)
     closeButton = new Button({menuRect.x + menuRect.w - 40, menuRect.y + 10},
-                                  {menuRect.w/10, menuRect.h/12}, ICON_CLOSE);
+                                  {30, 30}, ICON_CLOSE);
     closeButton->LockRatio(true);
     closeButton->LockSize(true);
 
@@ -110,6 +110,7 @@ bool Menu::CreateTextures() {
     for (auto &button : *buttonManager->AccessMap()) {
         button.second->CreateTextures();
     }
+    closeButton->CreateTextures();
 
     // Close textures
     tm->CloseTexture(MENU_SHEET);
@@ -141,9 +142,11 @@ bool Menu::Display() {
         }
     }
 
+    // Show close button
     if (canClose) closeButton->Display();
 
-    // Display all buttons in button manager
+
+    // Display all other buttons in button manager
     for (auto& button : *buttonManager->AccessMap()) {
         if (!button.second->Display()) {
             return false;
@@ -157,6 +160,14 @@ void Menu::CanClose(bool _closable) {
     canClose = _closable;
 }
 
+void Menu::LockSize(bool _lock) {
+    lockSize = _lock;
+}
+
+void Menu::LockRatio(bool _lock) {
+    lockRatio = _lock;
+}
+
 SDL_Rect Menu::FetchMenuRect() {
     return menuRect;
 }
@@ -167,11 +178,21 @@ void Menu::UpdatePosition(std::pair<int, int> _position) {
 }
 
 void Menu::UpdateSize(std::pair<int, int> _size) {
+    if (lockSize) return;
+
     std::pair<double, double> sf = {(double)_size.first / menuRect.w,
                                     (double)_size.second / menuRect.h};
 
-    menuRect.w = _size.first;
-    menuRect.h = _size.second;
+    // If ratio locked, use height sf for width;
+    if (lockRatio) {
+        sf.first = sf.second;
+    }
+
+    // Update size
+    menuRect.w = int((double)menuRect.w * sf.first);
+    menuRect.h = int((double)menuRect.h * sf.second);
+
+    printf("RATIO %f %f\n", sf.first, sf.second);
 
     // Update buttons
     for (auto& button : *buttonManager->AccessMap()) {

@@ -11,8 +11,8 @@
 
 #include "src_headers/GlobalSource.h"
 #include "src_headers/GlobalResources.h"
-#include "Screen/include/HomeScreen.h"
-#include "Screen/include/GameScreen.h"
+#include "UserInterface/include/HomeScreen.h"
+#include "UserInterface/include/GameScreen.h"
 
 int EnsureWindowSize() {
     // Fetch rect of current window properties

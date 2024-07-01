@@ -7,9 +7,7 @@
 Board::Board() {
 
     // Add rects for game board regions
-    rm->NewResource({0, 0, minMenuWidth, minBoardWidth}, RectID::OPTIONS);
-    rm->NewResource({minMenuWidth, 0, minBoardWidth, minBoardWidth}, RectID::BOARD);
-    rm->NewResource({minMenuWidth + minBoardWidth, 0, minInfoWidth, minBoardWidth}, RectID::GAME_INFO);
+    rm->NewResource({0, 0, minBoardWidth, minBoardWidth}, RectID::BOARD);
     rm->NewResource({0, 0, 0, 0}, RectID::PROMO_MENU);
 
     // Construct rect for board tile
@@ -283,15 +281,15 @@ void Board::DisplayGameBoard() {
     rm->FetchResource(rect, RectID::BOARD);
     SDL_RenderCopy(window.renderer, texture, nullptr, &rect);
 
-    // display menu background
-    texture = tm->AccessTexture(BOARD_BASE_SECONDARY);
-    rm->FetchResource(rect, RectID::OPTIONS);
-    SDL_RenderCopy(window.renderer, texture, nullptr, &rect);
-
-    // display game info background
-    texture = tm->AccessTexture(BOARD_BASE_SECONDARY);
-    rm->FetchResource(rect, RectID::GAME_INFO);
-    SDL_RenderCopy(window.renderer, texture, nullptr, &rect);
+//    // display menu background
+//    texture = tm->AccessTexture(BOARD_BASE_SECONDARY);
+//    rm->FetchResource(rect, RectID::OPTIONS);
+//    SDL_RenderCopy(window.renderer, texture, nullptr, &rect);
+//
+//    // display game info background
+//    texture = tm->AccessTexture(BOARD_BASE_SECONDARY);
+//    rm->FetchResource(rect, RectID::GAME_INFO);
+//    SDL_RenderCopy(window.renderer, texture, nullptr, &rect);
 }
 
 std::string Board::GetPromoMenuInput() {
@@ -336,8 +334,16 @@ void Board::GetTileDimensions(int& _w, int& _h) const {
 }
 
 void Board::GetMinDimensions(int& _w, int& _h) const {
-    _w = minBoardWidth + minInfoWidth + minMenuWidth;
-    _h = minBoardWidth;
+    _w = minBoardWidth;
+    _h = minBoardHeight;
+}
+
+void Board::GetBoardDimensions(int &_w, int &_h) const {
+    SDL_Rect boardRect;
+    rm->FetchResource(boardRect, BOARD);
+
+    _w = boardRect.w;
+    _h = boardRect.h;
 }
 
 void Board::GetRowsColumns(int &_rows, int &_cols) const {
@@ -388,44 +394,24 @@ void Board::GetBorderedRectFromPosition(SDL_Rect &_rect, std::pair<char, int> _p
 
 void Board::FillToBounds(int _w, int _h) {
     printf("w: %d h: %d\n", _w, _h);
-    /*
-     * section min size / sum of minimums = the multiplier of the given _width or _height values to determine the
-     * sections new size. Ratio of newBoardSize / minBoardSize is used to alter the other sections sizes.
-     */
 
-    double ratio;
-    int sumMinWidth = minBoardWidth + minMenuWidth + minInfoWidth;
+    SDL_Rect rect;
+    rm->FetchResource(rect, BOARD);
 
-    // Determine size of the main board and ensure height of screen is not exceeded
+    // Ensure board does not go offscreen when resizing (only when explicitly set to be offscreen)
+    if (rect.y > 0) _h -= rect.y;
+    if (rect.x > 0) _w -= rect.x;
 
-    // Ensure height of screen isn't exceeded
-    ratio = (double)minBoardWidth / sumMinWidth;
-    int boardHeight = int(_w * ratio);
-    if (boardHeight > _h) boardHeight = _h;
-    ratio = (double)boardHeight / minBoardWidth;
+    // Determine the scale factor
+    double sf = (_w > _h) ? (double)(_h) / minBoardHeight : (double)(_w) / minBoardWidth;
+    sf = std::max(1.0, sf);
 
-    // Resize rects
-    RectID rectIDs[3] {RectID::OPTIONS, RectID::BOARD, RectID::GAME_INFO};
-    int minWidth[3] {minMenuWidth, minBoardWidth, minInfoWidth};
-    for (int id = 0; id < 3; id++) {
-        SDL_Rect rect;
-        rm->FetchResource(rect, rectIDs[id]);
-        rect.h = boardHeight;
-        rect.w = int(minWidth[id] * ratio);
+    // Resize board rect
+    rect.h = int(minBoardHeight * sf);
+    rect.w = int(minBoardWidth * sf);
 
-        // Reposition rects due to new sizes
-        rect.y = 0;
-        rect.x = 0;
-
-        if (id > 0) {
-            SDL_Rect prevRect;
-            rm->FetchResource(prevRect, rectIDs[id-1]);
-            rect.x = prevRect.x + prevRect.w;
-        }
-
-        // Update stored rect
-        rm->ChangeResource(rect, rectIDs[id]);
-    }
+    // Update stored rect
+    rm->ChangeResource(rect, BOARD);
 }
 
 /*
@@ -720,4 +706,13 @@ void Board::IncrementTurn() {
     if ((halfturns % 2) == 0) {
         currentTurn += 1;
     }
+}
+
+void Board::SetBoardPos(int _x, int _y) {
+    SDL_Rect boardRect;
+    rm->FetchResource(boardRect, BOARD);
+
+    boardRect.x = _x;
+    boardRect.y = _y;
+    rm->ChangeResource(boardRect, BOARD);
 }

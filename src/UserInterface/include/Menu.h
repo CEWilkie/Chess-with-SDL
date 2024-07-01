@@ -30,6 +30,8 @@ class Menu {
         // DisplayToggle vars
         std::string menuTitle;
         bool showBackground = true;
+        bool lockSize = false;
+        bool lockRatio = false;
 
     public:
         Menu(std::pair<int, int> _position, std::pair<int, int> _size, const std::string& _title);
@@ -39,6 +41,8 @@ class Menu {
         bool LoadMenu(bool _load);
         bool Display();
         void CanClose(bool _closable);
+        void LockSize(bool _lock);
+        void LockRatio(bool _lock);
 
         // update rect
         SDL_Rect FetchMenuRect();
@@ -50,7 +54,7 @@ class Menu {
         void UpdateButtonStates();
         virtual void CheckButtons();
 
-        // callable funcitons for buttons
+        // callable functions for buttons
         void CloseMenu();
 };
 

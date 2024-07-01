@@ -38,12 +38,17 @@ bool Button::CreateTextures() {
     std::pair<int, int> tgSize;
     SDL_Rect srcRect, destRect;
 
+    ButtonTexture ids[] = {ButtonTexture::NORMAL, ButtonTexture::HOVER, ButtonTexture::CLICKED};
     for (int t = 0; t < 3; t++) {
         // Create texture to draw to
         SDL_Texture* buttonTexture = SDL_CreateTexture(window.renderer,
                                                        SDL_PIXELFORMAT_RGBA8888,
                                                        SDL_TEXTUREACCESS_TARGET,
                                                        buttonRect.w, buttonRect.h);
+        if (buttonTexture == nullptr) {
+            LogError("Failed to create button texture", SDL_GetError());
+            return false;
+        }
 
         // Set renderTarget
         if (SDL_SetRenderTarget(window.renderer, buttonTexture) != 0) {
@@ -97,35 +102,40 @@ bool Button::CreateTextures() {
             // Resize texture
             int labelW, labelH;
             SDL_QueryTexture(textTexture, nullptr, nullptr, &labelW, &labelH);
-            sf = (double) labelH / (buttonRect.h * (1 - 2 * textBorder));
-            labelH = int(buttonRect.h * (1 - 2 * textBorder));
+            sf = (double) labelH / ((double)buttonRect.h * (1 - 2 * textBorder));
+            labelH = int((double)buttonRect.h * (1 - 2 * textBorder));
             labelW = int((double) labelW / sf);
 
             // Centralise label in button
-            destRect = {buttonRect.w / 2 - labelW / 2, int(textBorder * buttonRect.h), labelW, labelH};
+            destRect = {buttonRect.w / 2 - labelW / 2, int(textBorder * (double)buttonRect.h), labelW, labelH};
             SDL_RenderCopy(window.renderer, textTexture, nullptr, &destRect);
         }
 
         // Check for drawing an icon, and if the icon is part of the global texture manager
         if (iconID != ButtonTexture::ICON_NONE) {
             if (!usingButtonIcon) {
+                // using global texture for icon
                 SDL_Texture* iconTexture = tm->AccessTexture(iconID);
 
                 // Centralise the icon
                 destRect = {buttonRect.w/2 - buttonRect.h / 2, 0, buttonRect.h, buttonRect.h};
-                SDL_RenderCopy(window.renderer, buttonSheet, nullptr, &destRect);
+                if (SDL_RenderCopy(window.renderer, iconTexture, nullptr, &destRect) != 0) {
+                    LogError("Failed to draw NON-BUTTON-ICON", SDL_GetError());
+                }
             }
             else {
+                // using button icon for texture
                 srcRect.x = 4*srcRect.w;
                 srcRect.y = (((int)iconID - (int)ButtonTexture::ICON_NONE) - 1) * srcRect.h;
 
                 // Centralise the icon
                 destRect = {buttonRect.w/2 - buttonRect.h / 2, 0, buttonRect.h, buttonRect.h};
-                SDL_RenderCopy(window.renderer, buttonSheet, &srcRect, &destRect);
+                if (SDL_RenderCopy(window.renderer, buttonSheet, &srcRect, &destRect) != 0) {
+                    LogError("Failed to draw BUTTON ICON", SDL_GetError());
+                }
             }
         }
 
-        ButtonTexture ids[] = {ButtonTexture::NORMAL, ButtonTexture::HOVER, ButtonTexture::CLICKED};
         buttonTextures->UpdateTexture(buttonTexture, ids[t]);
 
         // store edgeRadius
@@ -167,12 +177,12 @@ bool Button::Display() {
     if (clickStarted) id = ButtonTexture::CLICKED;
 
     SDL_Texture* buttonTexture = buttonTextures->AccessTexture(id);
-    if (buttonTextures->GetIssue() != TextureManager::Issue::NO_ISSUE) {
+    if (buttonTexture == nullptr) {
         LogError(TextureManager::GetIssueString(buttonTextures->GetIssue()), "");
         return false;
     }
     if (SDL_RenderCopy(window.renderer, buttonTexture, nullptr, &buttonRect) != 0) {
-        LogError("Failed to display ButtonID", SDL_GetError(), false);
+        LogError("Failed to display Button", SDL_GetError(), false);
         return false;
     }
 

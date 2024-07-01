@@ -43,8 +43,7 @@ class Board{
 
         // minimum dimensions of square board widths
         const int minBoardWidth = 500;
-        const int minMenuWidth = 150;
-        const int minInfoWidth = 300;
+        const int minBoardHeight = 500;
 
         // Local resource manager pointers
         enum RectID : int;
@@ -72,6 +71,7 @@ class Board{
         // Getters
         void GetTileDimensions(int& _w, int& _h) const;
         void GetMinDimensions(int& _w, int& _h) const;
+        void GetBoardDimensions(int& _w, int& _h) const;
         void GetRowsColumns(int& _rows, int& _cols) const;
         std::pair<int, int> GetRowsColumns() const;
         void GetBoardBLPosition(int& _x, int& _y) const;
@@ -80,6 +80,7 @@ class Board{
 
         // Setters
         void FillToBounds(int _w, int _h);
+        void SetBoardPos(int _x, int _y);
 
         // Gameplay Recording
         bool GameDataDirectoryExists();

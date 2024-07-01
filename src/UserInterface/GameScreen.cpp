@@ -29,7 +29,20 @@ GameScreen::GameScreen(char _teamID) : AppScreen() {
     teamptr = whitePieces;
     oppptr = blackPieces;
 
+    /*
+     * Construct OPTIONS menu (back to menu, resign, offer draw)
+     */
+
+    // button to show menu
+//    button = new Button({0, 0}, {30, 30}, "HI");
+//    buttonManager->NewResource(button, SHOW_OPTIONS_MENU);
+
+    menu = new Menu({0, 0}, {100, 500}, "");
+    menu->CanClose(false);
+    menuManager->NewResource(menu, OPTIONS_MENU);
+
     // Set states
+
     stateManager->NewResource(false, SHOW_PROMO_MENU);
     stateManager->NewResource(false, END_OF_TURN);
     stateManager->NewResource(true, ALL_TASKS_COMPLETE);
@@ -49,6 +62,7 @@ GameScreen::~GameScreen() {
 void GameScreen::SetUpBoard() {
     // Construct board
     board = new Board();
+    board->SetBoardPos(100, 0);
 
     // Ensure GameData directory exists else end program
     if (!board->GameDataDirectoryExists()) {
@@ -230,6 +244,8 @@ bool GameScreen::CreateTextures() {
 
 bool GameScreen::Display() {
     bool state;
+    Menu* menu;
+    Button* button;
 
     // Display screen background
     SDL_SetRenderDrawColor(window.renderer, 0, 150, 150, 255);
@@ -240,6 +256,12 @@ bool GameScreen::Display() {
     board->DisplayGameBoard();
     stateManager->FetchResource(state, SHOW_PROMO_MENU);
 
+    // Display buttons
+    for (auto& bmButton : *buttonManager->AccessMap()) {
+        bmButton.second->Display();
+    }
+
+
     // Display Pieces
     for (Piece* piece : *allPieces) {
         piece->DisplayPiece(board);
@@ -249,16 +271,37 @@ bool GameScreen::Display() {
     // Display the promotion menu if required
     if (state) board->DisplayPromoMenu(teamptr->back());
 
+    // If end of game, display the endgame menu
+
+
+    // if show menu clicked show options menu
+    menuManager->FetchResource(menu, OPTIONS_MENU);
+    menu->Display();
+
+//    for (auto& bmMenu : *menuManager->AccessMap()) {
+//        bmMenu.second->Display();
+//    }
+
     return true;
 }
 
 void GameScreen::ResizeScreen() {
     AppScreen::ResizeScreen();
 
+    // Temp vars
+    Menu* menu;
+    Button* button;
+
     // Resize board
     board->FillToBounds(window.currentRect.w, window.currentRect.h);
 
     // Resize pieces
+    // ...
+
+    // Resize options menu
+    menuManager->FetchResource(menu, OPTIONS_MENU);
+    menu->UpdateSize({100, window.currentRect.h});
+    menuManager->ChangeResource(menu, OPTIONS_MENU);
 }
 
 void GameScreen::HandleEvents() {
