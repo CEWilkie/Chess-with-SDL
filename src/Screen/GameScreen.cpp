@@ -284,7 +284,6 @@ void GameScreen::HandleEvents() {
 
     /*
      * CHECK FOR STALEMATE / CHECKMATE
-     *
      * TODO : 3 move repetition
      * TODO : 50 moves rule
      * TODO : insufficient material
@@ -362,7 +361,7 @@ void GameScreen::HandleEvents() {
             if (basicMoveStr.length() > 4) {
                 Piece* promotedPiece = nullptr;
                 Piece_Info* pi = movPiece->GetPieceInfoPtr();
-                switch (basicMoveStr[5]) {
+                switch (basicMoveStr[4]) {
                     case 'n':
                         promotedPiece = new Knight("Knight", pi->colID, pi->gamepos);
                         break;
@@ -379,6 +378,7 @@ void GameScreen::HandleEvents() {
                 }
 
                 if (promotedPiece != nullptr) {
+                    printf("Settting piece\n");
                     // Piece has been made, mark pawn as captured and add new piece to teamptr
                     movPiece->Captured(true);
                     movPiece->UpdatePromoteInfo(promotedPiece);
