@@ -12,8 +12,10 @@ class Rook : public Piece{
         bool canCastle = true;
 
     public:
-        Rook(const std::string& _name, char _colID, std::pair<char, int> _gamepos);
-        void FetchMoves(const std::vector<Piece*> &_teamPieces, const std::vector<Piece*> &_oppPieces, const Board& _board) override;
+        Rook(char _colID);
+        void FetchMoves(const std::vector<std::unique_ptr<Piece>> &_teamPieces,
+                        const std::vector<std::unique_ptr<Piece>> &_oppPieces,
+                        const std::unique_ptr<Board>& _board) override;
         void UpdateCheckerVars() override;
 };
 

@@ -4,13 +4,16 @@
 
 #include "include/Bishop.h"
 
-Bishop::Bishop(const std::string &_name, char _colID, std::pair<char, int> _gamepos)
-: Piece(_name, _colID,_gamepos) {
-
+Bishop::Bishop(char _colID)
+: Piece(_colID) {
+    // update pieceinfo with pieceID
+    info->name = "Bishop";
+    info->pieceID = 'B';
 }
 
-void Bishop::FetchMoves(const std::vector<Piece *> &_teamPieces, const std::vector<Piece *> &_oppPieces,
-                        const Board &_board) {
+void Bishop::FetchMoves(const std::vector<std::unique_ptr<Piece>> &_teamPieces,
+                        const std::vector<std::unique_ptr<Piece>> &_oppPieces,
+                        const std::unique_ptr<Board>& _board) {
     /* Fetches diagonal empty squares in all 4 directions until either:
      * Exceeding board bounds
      * Reaching tile occupied by teammate
@@ -25,7 +28,7 @@ void Bishop::FetchMoves(const std::vector<Piece *> &_teamPieces, const std::vect
 
     // delta rows or change in rows. increments by +-1 to move in diagonals
     int maxRows, maxCols, dr = 0, dc = 0;
-    _board.GetRowsColumns(maxRows, maxCols);
+    _board->GetRowsColumns(maxRows, maxCols);
 
     // repeat 4 times for each of the diagonal directions (order RT -> RB -> LB -> LT)
     for (int direction = 0; direction < 4; direction++) {

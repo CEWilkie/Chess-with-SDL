@@ -4,14 +4,19 @@
 
 #include "include/King.h"
 
-King::King(const std::string &_name, char _colID, std::pair<char, int> _gamepos)
-: Piece(_name, _colID,_gamepos) {
+King::King(char _colID)
+: Piece(_colID) {
+    // update pieceinfo with pieceID
+    info->name = "King";
+    info->pieceID = 'K';
+
     canCastleQueenside = true;
     canCastleKingside = true;
 }
 
-void King::FetchMoves(const std::vector<Piece *> &_teamPieces, const std::vector<Piece *> &_oppPieces,
-                      const Board &_board) {
+void King::FetchMoves(const std::vector<std::unique_ptr<Piece>> &_teamPieces,
+                      const std::vector<std::unique_ptr<Piece>> &_oppPieces,
+                      const std::unique_ptr<Board>& _board) {
     /*
      * King moves are in the 8 tiles surrounding him
      * [_][_][_][_][_]
@@ -67,7 +72,7 @@ void King::FetchMoves(const std::vector<Piece *> &_teamPieces, const std::vector
     bool castleQueensideNow = true;
 
     // if king is in check, cannot castle
-    if (std::any_of(_oppPieces.begin(), _oppPieces.end(), [](Piece* piece){
+    if (std::any_of(_oppPieces.begin(), _oppPieces.end(), [](const std::unique_ptr<Piece>& piece){
         return piece->IsCheckingKing();
     })) {
         castleKingsideNow = false;
@@ -76,7 +81,7 @@ void King::FetchMoves(const std::vector<Piece *> &_teamPieces, const std::vector
 
     // checking that no space is checked or occupied
     for (int dx = -2; dx < 3; dx++){
-        for (auto piece: _oppPieces) {
+        for (const auto& piece: _oppPieces) {
             if (piece->IsTargetingPosition({char(info->gamepos.first + dx), info->gamepos.second})) {
                 // piece is targeting one of the spaces, cannot currently castle
                 (dx < 0) ? castleQueensideNow = false : castleKingsideNow = false;

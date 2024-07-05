@@ -124,7 +124,7 @@ int main(int argc, char** argv) {
     gs.CreateTextures();
 
     // Later should move this
-    gs.SetupEngine(true, 1320, 10);
+    gs.SetupEngine(true, 1320, 1);
 
     screenManager->NewResource(&gs, GAMESCREEN);
 

@@ -4,24 +4,9 @@
 
 #include "include/Piece.h"
 
-Piece::Piece(const std::string& _name, char _colID, std::pair<char, int> _gamepos) {
+Piece::Piece(char _colID) {
     // set piece info values
-    info = new Piece_Info{_name, (char)tolower(_gamepos.first), _colID, _gamepos};
-    if (_name != "Pawn") info->pieceID = _name[0];
-    if (_name == "Knight") info->pieceID = 'N';
-
-    // Load TextureID for piece
-    TextureID t;
-    switch (info->pieceID) {
-        case 'K': t = WHITE_KING; break;
-        case 'Q': t = WHITE_QUEEN; break;
-        case 'R': t = WHITE_ROOK; break;
-        case 'B': t = WHITE_BISHOP; break;
-        case 'N': t = WHITE_KNIGHT; break;
-        default: t = WHITE_PAWN; break;
-    }
-    info->textureID = TextureID(t + (info->colID == 'W' ? 0 : 1) + PIECE_STYLE.second);
-    tm->OpenTexture(info->textureID);
+    info = std::make_unique<PieceInfo>(PieceInfo({"Pawn", '_', _colID}));
 
     // Load texture for move display
     tm->OpenTexture(MOVE);
@@ -37,6 +22,20 @@ Piece::Piece(const std::string& _name, char _colID, std::pair<char, int> _gamepo
     canPromote = (info->name == "Pawn");
 }
 
+Piece::~Piece() {
+    // printf("END OF PIECE\n");
+}
+
+/*
+ * SETUP
+ */
+
+void Piece::SetPos(std::pair<char, int> _position) {
+    info->gamepos = _position;
+    if (info->name == "Pawn")
+        info->pieceID = info->gamepos.first;
+}
+
 /*
  *  DISPLAY
  */
@@ -48,10 +47,23 @@ int Piece::CreateTextures() {
      * Create the textures for move highlights, the piece model
      */
 
+    // Load TextureID for piece
+    TextureID t;
+    switch (info->pieceID) {
+        case 'K': t = WHITE_KING; break;
+        case 'Q': t = WHITE_QUEEN; break;
+        case 'R': t = WHITE_ROOK; break;
+        case 'B': t = WHITE_BISHOP; break;
+        case 'N': t = WHITE_KNIGHT; break;
+        default: t = WHITE_PAWN; break;
+    }
+    info->textureID = TextureID(t + (info->colID == 'W' ? 0 : 1) + PIECE_STYLE.second);
+    tm->OpenTexture(info->textureID);
+
     return 0;
 }
 
-void Piece::SetRects(Board *_board) {
+void Piece::SetRects(const std::unique_ptr<Board> &_board) {
     SDL_Rect rect;
     _board->GetBorderedRectFromPosition(rect, info->gamepos);
     rm->ChangeResource(rect, RectID::BOARDPOS_RECT);
@@ -60,7 +72,7 @@ void Piece::SetRects(Board *_board) {
     rm->ChangeResource(rect, RectID::PIECE_RECT);
 }
 
-void Piece::GetRectOfBoardPosition(Board* _board) {
+void Piece::GetRectOfBoardPosition(const std::unique_ptr<Board> &_board) {
     SDL_Rect rect;
     _board->GetBorderedRectFromPosition(rect, info->gamepos);
     rm->ChangeResource(rect, RectID::BOARDPOS_RECT);
@@ -68,7 +80,7 @@ void Piece::GetRectOfBoardPosition(Board* _board) {
 
 // Displaying Piece / Moves
 
-void Piece::DisplayPiece(Board* _board) {
+void Piece::DisplayPiece(const std::unique_ptr<Board> &_board) {
     // Don't display piece if captured
     if (captured) return;
 
@@ -86,13 +98,13 @@ void Piece::DisplayPiece(Board* _board) {
     if (lastMoveDisplayTimer > 0) {
         // last position
         _board->GetTileRectFromPosition(rect, info->lastpos);
-        SDL_SetRenderDrawColor(window.renderer, 0, 0, 0, 25);
+        SDL_SetRenderDrawColor(window.renderer, 0, 0, 0, 75);
         SDL_RenderFillRect(window.renderer, &rect);
         SDL_SetRenderDrawColor(window.renderer, 0, 0, 0, 0);
 
         // new position
         _board->GetTileRectFromPosition(rect, info->gamepos);
-        SDL_SetRenderDrawColor(window.renderer, 0, 0, 0, 50);
+        SDL_SetRenderDrawColor(window.renderer, 0, 0, 0, 125);
         SDL_RenderFillRect(window.renderer, &rect);
         SDL_SetRenderDrawColor(window.renderer, 0, 0, 0, 0);
     }
@@ -136,14 +148,14 @@ void Piece::DisplayPiece(Board* _board) {
     SDL_RenderCopy(window.renderer, texture, nullptr, &rect);
 }
 
-void Piece::DisplayMoves(Board* _board) {
+void Piece::DisplayMoves(const std::unique_ptr<Board> &_board) {
     /*
      * When the piece is selected, will display the valid moves listed in the validMoves vector
      */
 
     if (!selected || captured) return;
 
-    for (AvailableMove move : validMoves) {
+    for (const AvailableMove& move : validMoves) {
         SDL_Rect moveRect = {0, 0};
         _board->GetBorderedRectFromPosition(moveRect, move.GetPosition());
 
@@ -165,7 +177,9 @@ void Piece::DisplayMoves(Board* _board) {
 
 // Fetching and testing Moves
 
-void Piece::FetchMoves(const std::vector<Piece*> &_teamPieces, const std::vector<Piece*> &_oppPieces, const Board& _board) {
+void Piece::FetchMoves(const std::vector<std::unique_ptr<Piece>> &_teamPieces,
+                       const std::vector<std::unique_ptr<Piece>> &_oppPieces,
+                       const std::unique_ptr<Board>& _board) {
     /*
      * These moves apply to the Pawn piece. This function is overwritten by other pieces. Move Summary:
      * Forward by 1 always unless blocked
@@ -197,7 +211,7 @@ void Piece::FetchMoves(const std::vector<Piece*> &_teamPieces, const std::vector
     }
 
     // check for capture moves
-    for (Piece* piece : _oppPieces) {
+    for (const auto& piece : _oppPieces) {
         // ignore captured pieces
         if (piece->captured) continue;
 
@@ -207,14 +221,14 @@ void Piece::FetchMoves(const std::vector<Piece*> &_teamPieces, const std::vector
             if (piece->info->gamepos.second == info->gamepos.second + dir) {
                 validMoves.emplace_back();
                 validMoves.back().SetPosition(piece->info->gamepos);
-                validMoves.back().SetTarget(piece);
+                validMoves.back().SetTarget(piece.get());
             }
 
             // check passant
             if (piece->info->gamepos.second == info->gamepos.second && piece->canPassant) {
                 validMoves.emplace_back();
                 validMoves.back().SetPosition({piece->info->gamepos.first, piece->info->gamepos.second + dir});
-                validMoves.back().SetTarget(piece);
+                validMoves.back().SetTarget(piece.get());
             }
         }
     }
@@ -224,10 +238,10 @@ void Piece::FetchMoves(const std::vector<Piece*> &_teamPieces, const std::vector
     updatedMoves = true;
 }
 
-void Piece::EnforceBorderOnMoves(const Board& _board) {
+void Piece::EnforceBorderOnMoves(const std::unique_ptr<Board> &_board) {
     // Removes any moves from the valid moves list that go past the border.
     int rows, cols;
-   _board.GetRowsColumns(rows, cols);
+   _board->GetRowsColumns(rows, cols);
 
     if (validMoves.empty()) return;
 
@@ -245,16 +259,18 @@ void Piece::EnforceBorderOnMoves(const Board& _board) {
     }
 }
 
-bool Piece::MoveLeadsToCheck(const std::vector<Piece *> &_teamPieces, const std::vector<Piece *> &_oppPieces,
-                             const Board &_board, AvailableMove* _move, Piece* _movingPiece) {
-    // store move data locally, as info at pointer can be changed and idk how to fix that
-    AvailableMove move = *_move;
+bool Piece::MoveLeadsToCheck(const std::vector<std::unique_ptr<Piece>> &_teamPieces,
+                             const std::vector<std::unique_ptr<Piece>> &_oppPieces,
+                             const std::unique_ptr<Board> &_board,
+                             const AvailableMove& _move){
+    // store move data locally
+    const AvailableMove& move = _move;
 
     // move piece temporarily and calculate if king is being checked after the move
-    _movingPiece->TempMoveTo(&move);
+    TempMoveTo(_move);
 
     bool checking = false;
-    for (auto oppPiece : _oppPieces) {
+    for (const auto& oppPiece : _oppPieces) {
         oppPiece->ClearMoves();
         oppPiece->FetchMoves(_oppPieces, _teamPieces, _board);
         // if the oppPiece is checking the king, then the move is invalid
@@ -265,9 +281,9 @@ bool Piece::MoveLeadsToCheck(const std::vector<Piece *> &_teamPieces, const std:
     }
 
     // reset position and moves
-    _movingPiece->UnMove(&move);
+    UnMove(move);
 
-    for (auto oppPiece : _oppPieces) {
+    for (const auto& oppPiece : _oppPieces) {
         oppPiece->ClearMoves();
         oppPiece->FetchMoves(_oppPieces, _teamPieces, _board);
     }
@@ -276,10 +292,12 @@ bool Piece::MoveLeadsToCheck(const std::vector<Piece *> &_teamPieces, const std:
     return checking;
 }
 
-void Piece::PreventMoveIntoCheck(const std::vector<Piece *> &_teamPieces, const std::vector<Piece *> &_oppPieces, const Board &_board) {
+void Piece::PreventMoveIntoCheck(const std::vector<std::unique_ptr<Piece>> &_teamPieces,
+                                 const std::vector<std::unique_ptr<Piece>> &_oppPieces,
+                                 const std::unique_ptr<Board> &_board) {
     if (updatedNextMoves) return;
 
-    for (auto move : validMoves) {
+    for (const auto& move : validMoves) {
         std::pair<char, int> movPos {};
         move.GetPosition(&movPos);
     }
@@ -290,8 +308,10 @@ void Piece::PreventMoveIntoCheck(const std::vector<Piece *> &_teamPieces, const 
     for (int i = 0; i < validMoves.size(); i++) {
         std::pair<char, int> movPos {};
         validMoves[i].GetPosition(&movPos);
-        eraseMoveIndexes[i] = MoveLeadsToCheck(_teamPieces, _oppPieces,
-                                               _board, &validMoves[i], this);
+        eraseMoveIndexes[i] = MoveLeadsToCheck(_teamPieces,
+                                               _oppPieces,
+                                               _board,
+                                               validMoves[i]);
     }
 
     // now remove the marked moves
@@ -332,7 +352,7 @@ void Piece::ClearNextMoves() {
 bool Piece::IsTargetingPosition(std::pair<char, int> _targetPosition) {
     // checks if any of the pieces moves are targeting the specified position _targetPosition
 
-    return std::any_of(validMoves.begin(), validMoves.end(), [&](AvailableMove move){
+    return std::any_of(validMoves.begin(), validMoves.end(), [&](const AvailableMove& move){
         return (move.GetPosition().first == _targetPosition.first && move.GetPosition().second == _targetPosition.second);
     });
 }
@@ -340,7 +360,7 @@ bool Piece::IsTargetingPosition(std::pair<char, int> _targetPosition) {
 bool Piece::IsCheckingKing() {
     if (captured) return false;
 
-    return (std::any_of(validMoves.begin(), validMoves.end(), [](AvailableMove move){
+    return (std::any_of(validMoves.begin(), validMoves.end(), [](const AvailableMove& move){
         if (move.GetTarget() == nullptr) return false;
 
         return (move.GetTarget()->info->pieceID == 'K');
@@ -349,28 +369,30 @@ bool Piece::IsCheckingKing() {
 
 // Fetching piece if on a particular position
 
-Piece* Piece::GetTeamPieceOnPosition(const std::vector<Piece *> &_teamPieces, std::pair<char, int> _targetPos) {
-    for (auto teamPiece : _teamPieces) {
+Piece* Piece::GetTeamPieceOnPosition(const std::vector<std::unique_ptr<Piece>> &_teamPieces,
+                                     std::pair<char, int> _targetPos) {
+    for (const auto& teamPiece : _teamPieces) {
         // ignore captured pieces
         if (teamPiece->captured) continue;
 
         // check non-captured piece
         if (teamPiece->info->gamepos.first == _targetPos.first && teamPiece->info->gamepos.second == _targetPos.second) {
-            return teamPiece;
+            return teamPiece.get();
         }
     }
 
     return nullptr;
 }
 
-Piece* Piece::GetOppPieceOnPosition(const std::vector<Piece *> &_oppPieces, std::pair<char, int> _targetPos) {
-    for (auto oppPiece : _oppPieces) {
+Piece* Piece::GetOppPieceOnPosition(const std::vector<std::unique_ptr<Piece>> &_oppPieces,
+                                    std::pair<char, int> _targetPos) {
+    for (const auto& oppPiece : _oppPieces) {
         // ignore captured pieces
         if (oppPiece->captured) continue;
 
         // check non-captured piece
         if (oppPiece->info->gamepos.first == _targetPos.first && oppPiece->info->gamepos.second == _targetPos.second) {
-            return oppPiece;
+            return oppPiece.get();
         }
     }
 
@@ -378,7 +400,9 @@ Piece* Piece::GetOppPieceOnPosition(const std::vector<Piece *> &_oppPieces, std:
     return nullptr;
 }
 
-Piece* Piece::GetPieceOnPosition(const std::vector<Piece *> &_teamPieces, const std::vector<Piece *> &_oppPieces, std::pair<char, int> _targetPos) {
+Piece* Piece::GetPieceOnPosition(const std::vector<std::unique_ptr<Piece>> &_teamPieces,
+                                                 const std::vector<std::unique_ptr<Piece>> &_oppPieces,
+                                                 std::pair<char, int> _targetPos) {
     Piece* piece = GetTeamPieceOnPosition(_teamPieces, _targetPos);
     if (piece != nullptr) return piece;
 
@@ -393,7 +417,7 @@ Piece* Piece::GetPieceOnPosition(const std::vector<Piece *> &_teamPieces, const 
 
 // Making / Testing a move
 
-void Piece::MoveTo(std::pair<char, int> _movepos, Board* _board) {
+void Piece::MoveTo(std::pair<char, int> _movepos, const std::unique_ptr<Board> &_board) {
     // prevent moves when captured
     if  (captured) return;
 
@@ -430,36 +454,41 @@ void Piece::Captured(bool _captured) {
     // Close textures
 }
 
-void Piece::TempMoveTo(AvailableMove* _tempmove) {
+void Piece::TempMoveTo(const AvailableMove &_tempmove) {
     info->lastpos = info->gamepos;
-    info->gamepos = _tempmove->GetPosition();
+    info->gamepos = _tempmove.GetPosition();
 
     //make temp capture
-    if (_tempmove->GetTarget() != nullptr) {
-        _tempmove->GetTarget()->captured = true;
+    if (_tempmove.GetTarget() != nullptr) {
+        _tempmove.GetTarget()->captured = true;
     }
 }
 
-void Piece::UnMove(AvailableMove* _tempmove) {
+void Piece::UnMove(const AvailableMove &_tempmove) {
     info->gamepos = info->lastpos;
 
     //uncapture
-    if (_tempmove->GetTarget() != nullptr){
-        _tempmove->GetTarget()->captured = false;
+    if (_tempmove.GetTarget() != nullptr){
+        _tempmove.GetTarget()->captured = false;
     }
 }
 
 // Promotions
 
-bool Piece::ReadyToPromote(const Board& _board) {
+bool Piece::ReadyToPromote(const std::unique_ptr<Board> &_board) {
+    if (captured) return false;
+
+    // not a pawn -> cant promote
+    if (info->name != "Pawn") return false;
+
     // Determine if piece at end of column
-    int eoc = (info->colID == 'W') ? _board.GetRowsColumns().first : 1;
+    int eoc = (info->colID == 'W') ? _board->GetRowsColumns().first : 1;
     return (canPromote && info->gamepos.second == eoc && !captured);
 }
 
-void Piece::UpdatePromoteInfo(Piece* _promotedTo) {
+void Piece::UpdatePromoteInfo(const std::unique_ptr<Piece> &_promotedTo) {
     promoted = true;
-    promotedTo = _promotedTo;
+    promotedTo = _promotedTo.get();
 }
 
 Piece* Piece::GetPromotedTo() const {
@@ -470,7 +499,7 @@ Piece* Piece::GetPromotedTo() const {
  * SELECTING PIECES
  */
 
-void Piece::UpdateClickedStatus(std::vector<Piece*>* _teamPieces) {
+void Piece::UpdateClickedStatus(const std::vector<std::unique_ptr<Piece>> &_teamPieces) {
     if (captured) {
         clicked = false;
         heldClick = false;
@@ -486,8 +515,8 @@ void Piece::UpdateClickedStatus(std::vector<Piece*>* _teamPieces) {
     clicked = false;
 
     // if another piece is currently clicked, ignore any attempt to click on current piece
-    for (Piece* piece : *_teamPieces) {
-        if (piece == this) continue;
+    for (const auto& piece : _teamPieces) {
+        if (piece.get() == this) continue;
 
         if (piece->IsClicked()) {
             return;

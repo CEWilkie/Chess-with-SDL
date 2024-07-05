@@ -4,13 +4,15 @@
 
 #include "include/Queen.h"
 
-Queen::Queen(const std::string &_name, char _colID, std::pair<char, int> _gamepos)
-: Piece(_name, _colID,_gamepos) {
+Queen::Queen(char _colID)
+: Piece(_colID) {
+    info->name = "Queen";
     info->pieceID = 'Q';
 }
 
-void Queen::FetchMoves(const std::vector<Piece *> &_teamPieces, const std::vector<Piece *> &_oppPieces,
-                      const Board &_board) {
+void Queen::FetchMoves(const std::vector<std::unique_ptr<Piece>> &_teamPieces,
+                       const std::vector<std::unique_ptr<Piece>> &_oppPieces,
+                       const std::unique_ptr<Board>& _board) {
     /*
      * Combines the movement of the rook and bishop pieces
      */
@@ -23,7 +25,7 @@ void Queen::FetchMoves(const std::vector<Piece *> &_teamPieces, const std::vecto
 
     // delta rows or change in rows. increments by +-1 to move in diagonals
     int maxRows, maxCols, dr, dc;
-    _board.GetRowsColumns(maxRows, maxCols);
+    _board->GetRowsColumns(maxRows, maxCols);
 
     // repeat 4 times for each of the diagonal directions (order ResType -> R -> B -> L)
     for (int direction = 0; direction < 4; direction++) {

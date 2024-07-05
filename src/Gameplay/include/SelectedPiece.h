@@ -11,35 +11,37 @@ class SelectedPiece {
     private:
         // currently selected piece info
         Piece* selectedPiece = nullptr;
-        Piece_Info* selectedPieceInfo = nullptr;
-        AvailableMove* selectedMove = nullptr;
+        PieceInfo* selectedPieceInfo = nullptr;
+        AvailableMove selectedMove {};
 
         // last moved piece / move info
-        Piece* lastMovedPiece;
-        Piece_Info lastMovedInfo;
-        AvailableMove lastMove;
-        Piece_Info lastMovedTargetInfo;
+        Piece* lastMovedPiece = nullptr;
+        PieceInfo lastMovedInfo {};
+        AvailableMove lastMove {};
+        PieceInfo lastMovedTargetInfo {};
 
         // ACN construction
-        std::string lastMoveACN;
+        std::string lastMoveACN {};
         std::vector<std::string> moveList {};
 
     public:
         SelectedPiece();
 
         // Checking for inputs
-        void CheckForPieceClicked(std::vector<Piece*>* _teamptr);
-        bool CheckForMoveClicked(const Board* _board);
-        void ChangeSelectedPiece(Piece* _newSelected);
+        void CheckForPieceClicked(const std::vector<std::unique_ptr<Piece>>& _teamptr);
+        bool CheckForMoveClicked(const std::unique_ptr<Board>& _board);
+        void ChangeSelectedPiece(const std::unique_ptr<Piece>& _newSelected);
 
         // ACN composing
         void GetACNMoveString(std::string& _move);
         std::string GetACNMoveString() { return lastMoveACN; };
-        void CreateACNstring(std::vector<Piece*>* _teamptr);
+        void CreateACNstring(const std::vector<std::unique_ptr<Piece>>& _teamptr);
 
         // Making a move
-        void MakeMove(Board* _board);
-        void MakeMove(Piece* _piece, AvailableMove* _move, Board* _board);
+        void MakeMove(const std::unique_ptr<Board>& _board);
+        void MakeMove(Piece* _piece,
+                      const AvailableMove& _move,
+                      const std::unique_ptr<Board>& _board);
 
         // Getters
         Piece* GetSelectedPiece() { return selectedPiece; };

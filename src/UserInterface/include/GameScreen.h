@@ -27,24 +27,20 @@ class GameScreen : public AppScreen {
         };
 
         // Pointers to board and pieces
-        Board* board = nullptr;
-        SelectedPiece* selectedPiece = new SelectedPiece();
-        std::vector<Piece*>* allPieces = new std::vector<Piece*>;
-        std::vector<Piece*>* whitePieces = new std::vector<Piece*>;
-        std::vector<Piece*>* blackPieces = new std::vector<Piece*>;
-        std::vector<Piece*>* teamptr = nullptr;
-        std::vector<Piece*>* oppptr = nullptr;
-        std::vector<Piece*>* userTeamPtr = nullptr;
+        std::unique_ptr<Board> board = std::make_unique<Board>();
+        std::unique_ptr<SelectedPiece> selectedPiece = std::make_unique<SelectedPiece>();
+        std::unique_ptr<std::vector<std::unique_ptr<Piece>>> teamPieces;
+        std::unique_ptr<std::vector<std::unique_ptr<Piece>>> oppPieces;
+        //std::unique_ptr<std::vector<std::shared_ptr<Piece>>> allPieces;
 
         // Stockfish
-        StockfishManager* sfm = nullptr;
+        std::unique_ptr<StockfishManager> sfm = nullptr;
 
         // Turn management
         bool usersTurn;
 
     public:
-        GameScreen(char _teamID);
-        ~GameScreen();
+        explicit GameScreen(char _teamID);
 
         // Game setup
         void SetUpBoard();
@@ -60,7 +56,8 @@ class GameScreen : public AppScreen {
         void HandleEvents() override;
         void CheckButtons() override;
         std::string FetchOpponentMove();
-        std::string FetchOpponentMoveEngine();
+        std::string FetchOpponentMoveEngine(const std::vector<std::unique_ptr<Piece>>& _teamPieces,
+                                            const std::vector<std::unique_ptr<Piece>>& _oppPieces);
 };
 
 

@@ -64,19 +64,20 @@ class Board{
         int CreateBoardTexture();
         bool CreatePromoMenuTexture();
         void DisplayGameBoard();
-        void DisplayPromoMenu(Piece* _promotingPiece);
+        void DisplayPromoMenu(const std::unique_ptr<Piece>& _promotingPiece);
 
-        std::string GetPromoMenuInput();
+        char GetPromoMenuInput();
 
         // Getters
         void GetTileDimensions(int& _w, int& _h) const;
         void GetMinDimensions(int& _w, int& _h) const;
         void GetBoardDimensions(int& _w, int& _h) const;
         void GetRowsColumns(int& _rows, int& _cols) const;
-        std::pair<int, int> GetRowsColumns() const;
+        [[nodiscard]] std::pair<int, int> GetRowsColumns() const;
         void GetBoardBLPosition(int& _x, int& _y) const;
         void GetTileRectFromPosition(SDL_Rect& rect, std::pair<char, int> position) const;
         void GetBorderedRectFromPosition(SDL_Rect &_rect, std::pair<char, int> _position) const;
+        int GetHalfTurn() const { return halfturns; };
 
         // Setters
         void FillToBounds(int _w, int _h);
@@ -86,9 +87,11 @@ class Board{
         bool GameDataDirectoryExists();
         void ClearExcessGameFiles();
         bool CreateGameFiles();
-        bool WriteStartPositionsToFile(const std::vector<Piece*> &_allPieces);
+        bool WriteStartPositionsToFile(const std::vector<std::unique_ptr<Piece>>& _whitePieces,
+                                       const std::vector<std::unique_ptr<Piece>>& _blackPieces);
         bool WriteMoveToFile(const std::string& _move);
-        std::string CreateFEN(const std::vector<Piece *> &_whitePieces, const std::vector<Piece *> &_blackPieces) const;
+        [[nodiscard]] std::string CreateFEN(const std::vector<std::unique_ptr<Piece>>& _teamPieces,
+                                            const std::vector<std::unique_ptr<Piece>>& _oppPieces) const;
         void IncrementTurn();
 };
 

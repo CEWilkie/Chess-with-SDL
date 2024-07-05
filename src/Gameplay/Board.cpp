@@ -262,7 +262,7 @@ bool Board::CreatePromoMenuTexture() {
     return true;
 }
 
-void Board::DisplayPromoMenu(Piece* _promotingPiece) {
+void Board::DisplayPromoMenu(const std::unique_ptr<Piece>& _promotingPiece) {
     int col = _promotingPiece->GetPieceInfoPtr()->colID == 'W' ?  PROMO_WHITE_COMPILED : PROMO_BLACK_COMPILED;
     SDL_Texture* displayMenu = tm->AccessTexture(col);
     SDL_Rect rect;
@@ -292,13 +292,15 @@ void Board::DisplayGameBoard() {
 //    SDL_RenderCopy(window.renderer, texture, nullptr, &rect);
 }
 
-std::string Board::GetPromoMenuInput() {
+char Board::GetPromoMenuInput() {
     /*
      * Returns string name on selection of Knight, Bishop, Rook or Queen respectively
      */
 
+    char pieceID = '_';
+
     // no click made yet
-    if (!mouse.IsUnheldActive()) return "noinput";
+    if (!mouse.IsUnheldActive()) return pieceID;
 
     RectID rectIDs[4] = {RectID::PROMO_QUEEN, RectID::PROMO_ROOK, RectID::PROMO_BISHOP, RectID::PROMO_KNIGHT};
     SDL_Rect promoMenuRect;
@@ -311,21 +313,20 @@ std::string Board::GetPromoMenuInput() {
         rect.y += promoMenuRect.y;
 
         if (mouse.UnheldClick(rect)) {
-            std::string pieceName;
+
             switch (rectID){
-                case RectID::PROMO_QUEEN: pieceName = "Queen"; break;
-                case RectID::PROMO_ROOK: pieceName = "Rook"; break;
-                case RectID::PROMO_BISHOP: pieceName = "Bishop"; break;
-                case RectID::PROMO_KNIGHT: pieceName = "Knight"; break;
+                case RectID::PROMO_QUEEN: pieceID = 'q'; break;
+                case RectID::PROMO_ROOK: pieceID = 'r'; break;
+                case RectID::PROMO_BISHOP: pieceID = 'b'; break;
+                case RectID::PROMO_KNIGHT: pieceID = 'n'; break;
                 default: break;
             }
 
-            return pieceName;
+            return pieceID;
         }
     }
 
-    // click made, but not on menu. exit menu
-    return "";
+    return pieceID;
 }
 
 void Board::GetTileDimensions(int& _w, int& _h) const {
@@ -557,15 +558,25 @@ bool Board::CreateGameFiles() {
     return true;
 }
 
-bool Board::WriteStartPositionsToFile(const std::vector<Piece *> &_allPieces) {
+bool Board::WriteStartPositionsToFile(const std::vector<std::unique_ptr<Piece>>& _whitePieces,
+                                      const std::vector<std::unique_ptr<Piece>>& _blackPieces) {
     std::fstream spFile(startPosFilePath.c_str());
     if (!spFile.good()) {
         spFile.close();
         return false;
     }
 
-    for (auto piece : _allPieces) {
-        Piece_Info* pInfo = piece->GetPieceInfoPtr();
+    // White Pieces
+    for (const auto& piece : _whitePieces) {
+        auto pInfo = piece->GetPieceInfoPtr();
+        std::string pInfoStr; pInfoStr.append(&pInfo->colID);
+        pInfoStr += "," + pInfo->name + "," + pInfo->gamepos.first + "," + std::to_string(pInfo->gamepos.second);
+        spFile << pInfoStr << std::endl;
+    }
+
+    // Black Pieces
+    for (const auto& piece : _blackPieces) {
+        auto pInfo = piece->GetPieceInfoPtr();
         std::string pInfoStr; pInfoStr.append(&pInfo->colID);
         pInfoStr += "," + pInfo->name + "," + pInfo->gamepos.first + "," + std::to_string(pInfo->gamepos.second);
         spFile << pInfoStr << std::endl;
@@ -589,7 +600,8 @@ bool Board::WriteMoveToFile(const std::string& _move) {
     return true;
 }
 
-std::string Board::CreateFEN(const std::vector<Piece *> &_whitePieces, const std::vector<Piece *> &_blackPieces) const {
+std::string Board::CreateFEN(const std::vector<std::unique_ptr<Piece>>& _teamPieces,
+                             const std::vector<std::unique_ptr<Piece>>& _oppPieces) const {
     // Create FEN string for current position
     std::pair<char, int> position {'a',8};
     Piece* posPiece;
@@ -598,7 +610,7 @@ std::string Board::CreateFEN(const std::vector<Piece *> &_whitePieces, const std
 
     while (position.second > 0) {
         while (position.first <= 'h') {
-            posPiece = Piece::GetPieceOnPosition(_whitePieces, _blackPieces, position);
+            posPiece = Piece::GetPieceOnPosition(_teamPieces, _oppPieces, position);
             if (posPiece != nullptr) {
                 // write in number of empty tiles since last posPiece on row
                 if (nEmptyTiles > 0) FENstr += std::to_string(nEmptyTiles);
@@ -644,7 +656,7 @@ std::string Board::CreateFEN(const std::vector<Piece *> &_whitePieces, const std
     // White castling status
     bool castlePossible = false;
 
-    for (auto piece : _whitePieces) {
+    for (const auto& piece : _teamPieces) {
         if (piece->GetPieceInfoPtr()->pieceID == 'K') {
             auto canCastle = piece->CanCastle();
 
@@ -657,7 +669,7 @@ std::string Board::CreateFEN(const std::vector<Piece *> &_whitePieces, const std
     }
 
      // Black castling status
-    for (auto piece : _blackPieces) {
+    for (const auto& piece : _oppPieces) {
         if (piece->GetPieceInfoPtr()->pieceID == 'K') {
             auto canCastle = piece->CanCastle();
 
@@ -673,7 +685,7 @@ std::string Board::CreateFEN(const std::vector<Piece *> &_whitePieces, const std
     if (!castlePossible) FENstr += '-';
 
     // now denote possible en passant targets
-    for (auto piece : _whitePieces) {
+    for (const auto& piece : _teamPieces) {
         std::pair<char, int> target {};
         if (piece->CanPassant()) {
             target = piece->GetPassantTarget();
@@ -684,7 +696,7 @@ std::string Board::CreateFEN(const std::vector<Piece *> &_whitePieces, const std
         }
     }
 
-    for (auto piece : _blackPieces) {
+    for (const auto& piece : _oppPieces) {
         std::pair<char, int> target {};
         if (piece->CanPassant()) {
             target = piece->GetPassantTarget();

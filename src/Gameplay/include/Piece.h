@@ -7,8 +7,9 @@
 
 #include <vector>
 #include <string>
-#include <SDL_image.h>
 #include <algorithm>
+#include <SDL_image.h>
+#include <memory>
 
 #include "../../src_headers/GlobalSource.h"
 #include "../../src_headers/GlobalResources.h"
@@ -25,7 +26,7 @@ class Piece;
  * FULL DEFS
  */
 
-struct Piece_Info {
+struct PieceInfo {
     std::string name = "Pawn";
     char pieceID = 'a';
     char colID = 'W';
@@ -48,13 +49,10 @@ class AvailableMove{
             _assignablePosition->first = position.first;
             _assignablePosition->second = position.second;
         }
-        std::pair<char, int> GetPosition() {
+        [[nodiscard]] std::pair<char, int> GetPosition() const {
             return position;
         }
-        void GetTarget(Piece* _assignableTarget) const {
-            _assignableTarget = target;
-        }
-        Piece* GetTarget() {
+        [[nodiscard]] Piece* GetTarget() const {
             return target;
         }
 };
@@ -68,7 +66,7 @@ class Piece {
         bool updatedNextMoves = false;
 
         // Piece identification
-        Piece_Info* info {};
+        std::unique_ptr<PieceInfo> info;
 
         // Local ResourceManager pointers
         enum RectID : int;
@@ -76,7 +74,6 @@ class Piece {
 
         // SDL display
         std::string imgPath {};
-        float b_width = 0.1;
 
         // pawn movements
         bool hasMoved = false;
@@ -104,29 +101,41 @@ class Piece {
 
     public:
         // Constructor
-        Piece(const std::string& _name, char _colID, std::pair<char, int> _position);
+        explicit Piece(char _colID);
+        virtual ~Piece();
+
+        // Setup
+        void SetPos(std::pair<char, int> _position);
 
         /*
          * DISPLAY
          */
+
         // Creating textures
         int CreateTextures();
-        void SetRects(Board* _board);
-        void GetRectOfBoardPosition( Board* _board);
+        void SetRects(const std::unique_ptr<Board>& _board);
+        void GetRectOfBoardPosition(const std::unique_ptr<Board>& _board);
 
         // Displaying piece / moves
-        void DisplayPiece(Board* _board);
-        void DisplayMoves(Board* _board);
+        void DisplayPiece(const std::unique_ptr<Board>& _board);
+        void DisplayMoves(const std::unique_ptr<Board>& _board);
 
         /*
          * Fetching and testing Moves
          */
 
         // Fetching and testing Moves
-        virtual void FetchMoves(const std::vector<Piece*> &_teamPieces, const std::vector<Piece*> &_oppPieces, const Board& _board);
-        void EnforceBorderOnMoves(const Board& _board);
-        static bool MoveLeadsToCheck(const std::vector<Piece *> &_teamPieces, const std::vector<Piece*> &_oppPieces, const Board& _board, AvailableMove* _move, Piece* _movingPiece);
-        void PreventMoveIntoCheck(const std::vector<Piece *> &_teamPieces, const std::vector<Piece *> &_oppPieces, const Board &_board);
+        virtual void FetchMoves(const std::vector<std::unique_ptr<Piece>> &_teamPieces,
+                                const std::vector<std::unique_ptr<Piece>> &_oppPieces,
+                                const std::unique_ptr<Board>& _board);
+        void EnforceBorderOnMoves(const std::unique_ptr<Board>& _board);
+        bool MoveLeadsToCheck(const std::vector<std::unique_ptr<Piece>> &_teamPieces,
+                                     const std::vector<std::unique_ptr<Piece>> &_oppPieces,
+                                     const std::unique_ptr<Board>& _board,
+                                     const AvailableMove& _move);
+        void PreventMoveIntoCheck(const std::vector<std::unique_ptr<Piece>> &_teamPieces,
+                                  const std::vector<std::unique_ptr<Piece>> &_oppPieces,
+                                  const std::unique_ptr<Board>& _board);
 
         // Clear moves
         void ClearMoves();
@@ -141,32 +150,37 @@ class Piece {
         bool IsCheckingKing();
 
         // Fetching piece if on a particular position
-        static Piece* GetTeamPieceOnPosition(const std::vector<Piece*> &_teamPieces, std::pair<char, int> _targetPos);
-        static Piece* GetOppPieceOnPosition(const std::vector<Piece*> &_oppPieces, std::pair<char, int> _targetPos);
-        static Piece* GetPieceOnPosition(const std::vector<Piece*> &_teamPieces, const std::vector<Piece*> &_oppPieces, std::pair<char, int> _targetPos);
+        static Piece* GetTeamPieceOnPosition(const std::vector<std::unique_ptr<Piece>> &_teamPieces,
+                                             std::pair<char, int> _targetPos);
+        static Piece* GetOppPieceOnPosition(const std::vector<std::unique_ptr<Piece>> &_oppPieces,
+                                            std::pair<char, int> _targetPos);
+        static Piece* GetPieceOnPosition(const std::vector<std::unique_ptr<Piece>> &_teamPieces,
+                                         const std::vector<std::unique_ptr<Piece>> &_oppPieces,
+                                         std::pair<char, int> _targetPos);
 
         /*
          * MAKING A MOVE
          */
 
         // Making a move / Testing a move
-        void MoveTo(std::pair<char, int> _movepos, Board* _board);
+        void MoveTo(std::pair<char, int> _movepos,
+                    const std::unique_ptr<Board>& _board);
         virtual void UpdateCheckerVars();
         void Captured(bool captured = true);
-        void TempMoveTo(AvailableMove* _tempmove);
-        void UnMove(AvailableMove* _tempmove);
+        void TempMoveTo(const AvailableMove& _tempmove);
+        void UnMove(const AvailableMove& _tempmove);
 
         // Promotions
-        bool ReadyToPromote(const Board& _board);
-        void UpdatePromoteInfo(Piece* _promotedTo);
-        Piece* GetPromotedTo() const;
+        bool ReadyToPromote(const std::unique_ptr<Board>& _board);
+        void UpdatePromoteInfo(const std::unique_ptr<Piece>& _promotedTo);
+        [[nodiscard]] Piece* GetPromotedTo() const;
 
         /*
          * SELECTING PIECES
          */
 
         // Selecting Piece
-        void UpdateClickedStatus(std::vector<Piece*>* _teamPieces);
+        void UpdateClickedStatus(const std::vector<std::unique_ptr<Piece>> &_teamPieces);
         void SetSelected(bool _selected);
         void UnselectPiece();
 
@@ -174,13 +188,14 @@ class Piece {
          * GETTERS
          */
 
-        Piece_Info* GetPieceInfoPtr() { return info; };
-        std::vector<AvailableMove>* GetAvailableMovesPtr() { return &validMoves; };
-        bool HasMoved() const { return hasMoved; };
-        bool IsCaptured() const { return captured; };
-        bool IsClicked() const { return clicked; };
-        bool CanPassant() const { return canPassant; };
-        std::pair<char, int> GetPassantTarget() const {
+        PieceInfo* GetPieceInfoPtr() { return info.get(); };
+        std::unique_ptr<std::vector<AvailableMove>> GetAvailableMovesPtr() {
+            return std::make_unique<std::vector<AvailableMove>>(validMoves); };
+        [[nodiscard]] bool HasMoved() const { return hasMoved; };
+        [[nodiscard]] bool IsCaptured() const { return captured; };
+        [[nodiscard]] bool IsClicked() const { return clicked; };
+        [[nodiscard]] bool CanPassant() const { return canPassant; };
+        [[nodiscard]] std::pair<char, int> GetPassantTarget() const {
             return {info->gamepos.first, info->gamepos.second - dir};
         };
 

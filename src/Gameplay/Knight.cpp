@@ -4,13 +4,16 @@
 
 #include "include/Knight.h"
 
-Knight::Knight(const std::string& _name, char _colID, std::pair<char, int> _gamepos)
-: Piece(_name, _colID, _gamepos) {
-
+Knight::Knight(char _colID)
+        : Piece(_colID) {
+    // update pieceinfo with pieceID
+    info->name = "Knight";
+    info->pieceID = 'N';
 }
 
-void Knight::FetchMoves(const std::vector<Piece *> &_teamPieces, const std::vector<Piece *> &_oppPieces,
-                        const Board &_board) {
+void Knight::FetchMoves(const std::vector<std::unique_ptr<Piece>> &_teamPieces,
+                        const std::vector<std::unique_ptr<Piece>> &_oppPieces,
+                        const std::unique_ptr<Board>& _board) {
     /*
      * Fetches the moves for
      *  [_][a][_][a][_]
